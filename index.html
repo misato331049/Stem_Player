@@ -239,6 +239,45 @@
       box-shadow: 0 0 6px rgba(124,109,250,0.5);
     }
     .transport-btns { display: flex; align-items: center; gap: 12px; }
+
+    /* Master volume */
+    .master-vol-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .master-vol-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .master-vol-bar {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 140px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--surface2);
+      cursor: pointer;
+    }
+    .master-vol-bar::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(124,109,250,0.4);
+    }
+    .master-vol-val {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      min-width: 32px;
+    }
     .ctrl-btn {
       background: var(--surface2);
       border: 1px solid var(--border);
@@ -315,6 +354,17 @@
       opacity: 0;
     }
     .playhead-line.visible { opacity: 1; }
+    /* ドラッグ用の広いヒットエリア */
+    .playhead-drag-zone {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 20px;
+      transform: translateX(-50%);
+      cursor: ew-resize;
+      left: 0;
+      z-index: 10;
+      opacity: 0;
+    }
     .track-vol {
       -webkit-appearance: none; appearance: none;
       width: 80px; height: 3px; border-radius: 2px;
@@ -412,6 +462,11 @@
       <button class="play-btn" id="play-btn">▶</button>
       <button class="ctrl-btn" id="loop-btn">LOOP</button>
     </div>
+    <div class="master-vol-wrap">
+      <span class="master-vol-label">MASTER VOL</span>
+      <input type="range" class="master-vol-bar" id="master-vol" min="0" max="1" step="0.01" value="1" />
+      <span class="master-vol-val" id="master-vol-val">100%</span>
+    </div>
   </div>
 
   <div class="tracks-area" id="tracks-area"></div>
@@ -428,6 +483,7 @@ const SONGS_JSON_URL = './songs.json';
 ═══════════════════════════════════════ */
 let songs = [];
 let audioCtx = null;
+let masterGain = null;
 const tracks = [];
 let isPlaying = false;
 let startTime = 0;
@@ -494,6 +550,9 @@ async function openPlayer(songIdx) {
   tracks.length = 0;
   if (audioCtx) { await audioCtx.close(); }
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = +document.getElementById('master-vol').value;
+  masterGain.connect(audioCtx.destination);
 
   for (let i = 0; i < song.stems.length; i++) {
     const stem = song.stems[i];
@@ -504,7 +563,7 @@ async function openPlayer(songIdx) {
       const ab   = await resp.arrayBuffer();
       const buf  = await audioCtx.decodeAudioData(ab);
       const gain = audioCtx.createGain();
-      gain.connect(audioCtx.destination);
+      gain.connect(masterGain);  // → masterGain → destination
       tracks.push({ name: stem.name, buffer: buf, source: null, gainNode: gain, muted: false, soloed: false, vol: 1 });
     } catch(e) {
       console.error('decode error', stem.name, e);
@@ -534,6 +593,8 @@ function buildPlayerUI() {
   document.getElementById('seek-bar').value = 0;
   document.getElementById('play-btn').textContent = '▶';
   document.getElementById('loop-btn').classList.remove('active');
+  document.getElementById('master-vol').value = 1;
+  document.getElementById('master-vol-val').textContent = '100%';
   looping = false;
   soloActive = false;
 
@@ -545,7 +606,7 @@ function buildPlayerUI() {
     row.id = `track-row-${i}`;
     row.innerHTML = `
       <span class="track-name">${t.name}</span>
-      <div class="track-wave"><canvas id="wave-${i}"></canvas><div class="playhead-line" id="ph-${i}"></div></div>
+      <div class="track-wave" id="tw-${i}"><canvas id="wave-${i}"></canvas><div class="playhead-line" id="ph-${i}"></div><div class="playhead-drag-zone" id="pdz-${i}"></div></div>
       <input type="range" class="track-vol" min="0" max="1" step="0.01" value="1" data-i="${i}" />
       <div class="track-btns">
         <button class="track-btn" id="solo-btn-${i}" data-i="${i}">SOLO</button>
@@ -563,6 +624,60 @@ function buildPlayerUI() {
   tracks.forEach((_, i) => {
     document.getElementById(`solo-btn-${i}`).addEventListener('click', () => toggleSolo(i));
     document.getElementById(`mute-btn-${i}`).addEventListener('click', () => toggleMute(i));
+  });
+
+  // 波形ドラッグによるシーク
+  tracks.forEach((_, i) => {
+    const tw  = document.getElementById(`tw-${i}`);
+    const pdz = document.getElementById(`pdz-${i}`);
+    if (!tw || !pdz) return;
+
+    function getClickPct(e) {
+      const rect = tw.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    }
+
+    function onDragMove(e) {
+      e.preventDefault();
+      const pct = getClickPct(e);
+      pauseOffset = pct * duration;
+      seekBar.value = pct * 1000;
+      document.getElementById('time-current').textContent = formatTime(pauseOffset);
+      setPlayheadPct(pct);
+    }
+
+    function onDragEnd(e) {
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup',   onDragEnd);
+      document.removeEventListener('touchmove', onDragMove);
+      document.removeEventListener('touchend',  onDragEnd);
+      const pct = getClickPct(e.changedTouches ? {clientX: e.changedTouches[0].clientX} : e);
+      pauseOffset = pct * duration;
+      if (isPlaying) { pausePlayback(); startPlayback(pauseOffset); }
+    }
+
+    // クリックで即ジャンプ、ドラッグでスクラブ
+    tw.addEventListener('mousedown', e => {
+      if (e.target === pdz || tw.contains(e.target)) {
+        const pct = getClickPct(e);
+        pauseOffset = pct * duration;
+        setPlayheadPct(pct);
+        seekBar.value = pct * 1000;
+        document.getElementById('time-current').textContent = formatTime(pauseOffset);
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup',   onDragEnd);
+      }
+    });
+    tw.addEventListener('touchstart', e => {
+      const pct = getClickPct(e);
+      pauseOffset = pct * duration;
+      setPlayheadPct(pct);
+      seekBar.value = pct * 1000;
+      document.getElementById('time-current').textContent = formatTime(pauseOffset);
+      document.addEventListener('touchmove', onDragMove, {passive:false});
+      document.addEventListener('touchend',  onDragEnd);
+    }, {passive:true});
   });
 }
 
@@ -659,6 +774,13 @@ function endPlayback() {
 document.getElementById('play-btn').addEventListener('click', () => {
   if (!tracks.length) return;
   isPlaying ? pausePlayback() : startPlayback(pauseOffset);
+});
+
+/* master volume */
+document.getElementById('master-vol').addEventListener('input', function() {
+  const v = +this.value;
+  document.getElementById('master-vol-val').textContent = Math.round(v * 100) + '%';
+  if (masterGain) masterGain.gain.setTargetAtTime(v, audioCtx.currentTime, 0.02);
 });
 
 /* seek */
