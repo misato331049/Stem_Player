@@ -1,8 +1,8 @@
 [
   {
     "id": "song1",
-    "title": "曲名を入力してください",
-    "artist": "アーティスト名を入力してください",
+    "title": "パレード1",
+    "artist": "つちやみさと",
     "stems": [
       { "name": "Drums",      "file": "stems/song1/0 Drums.mp3" },
       { "name": "Bass",       "file": "stems/song1/1 Bass.mp3" },
@@ -14,3 +14,4 @@
     ]
   }
 ]
+
