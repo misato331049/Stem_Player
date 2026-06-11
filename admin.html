@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stem Player — 管理</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c26;
+      --border: #2a2a38;
+      --text: #e8e8f0;
+      --text-muted: #6b6b80;
+      --accent: #7c6dfa;
+      --accent2: #c084fc;
+      --danger: #f87171;
+      --success: #4ade80;
+      --warning: #f59e0b;
+    }
+
+    html, body { min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+    /* ── LAYOUT ── */
+    .admin-layout { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .sidebar-logo span { color: var(--accent); }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(124,109,250,0.12); color: var(--accent); }
+
+    /* GitHub settings card in sidebar */
+    .gh-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: auto;
+    }
+    .gh-card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .gh-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+    .gh-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .gh-dot.ok { background: var(--success); box-shadow: 0 0 6px rgba(74,222,128,0.4); }
+    .gh-dot.err { background: var(--danger); }
+    .gh-settings-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .gh-settings-btn:hover { color: var(--text); }
+
+    /* ── MAIN ── */
+    .main { padding: 40px 48px; display: flex; flex-direction: column; gap: 32px; }
+    .page { display: none; flex-direction: column; gap: 24px; }
+    .page.active { display: flex; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .page-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      border-radius: 8px; padding: 9px 18px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      border: none; white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+    .btn-secondary { background: var(--surface2); border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.3); color: var(--danger); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+
+    /* ── SONG LIST TABLE ── */
+    .song-table { width: 100%; border-collapse: collapse; }
+    .song-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .song-table td {
+      padding: 14px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .song-table tr:last-child td { border-bottom: none; }
+    .song-table tbody tr { transition: background 0.15s; }
+    .song-table tbody tr:hover { background: var(--surface); }
+
+    .song-row-title { font-weight: 600; color: var(--text); }
+    .song-row-artist { color: var(--text-muted); font-size: 13px; }
+    .stem-badge {
+      background: rgba(124,109,250,0.1);
+      border: 1px solid rgba(124,109,250,0.2);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .row-actions { display: flex; gap: 6px; }
+
+    .empty-table {
+      text-align: center;
+      padding: 60px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* ── FORM ── */
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .form-section-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { font-size: 13px; font-weight: 500; color: var(--text); }
+    .label-hint { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 6px; }
+    input[type="text"], input[type="url"], textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; }
+
+    /* stems list in form */
+    .stems-list { display: flex; flex-direction: column; gap: 8px; }
+    .stem-item {
+      display: grid;
+      grid-template-columns: 1fr 2fr auto;
+      gap: 10px;
+      align-items: center;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .stem-item input[type="text"] { background: var(--surface); padding: 7px 10px; font-size: 13px; }
+    .stem-num {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .stem-remove {
+      background: none; border: none;
+      color: var(--text-muted); font-size: 16px;
+      cursor: pointer; padding: 2px 6px; border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .stem-remove:hover { color: var(--danger); }
+
+    .add-stem-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: none; color: var(--text-muted);
+      font-size: 13px; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      width: 100%;
+    }
+    .add-stem-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* file upload */
+    .upload-area {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+    .upload-area:hover, .upload-area.drag-over { border-color: var(--accent); background: rgba(124,109,250,0.04); }
+    .upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-label { font-size: 13px; color: var(--text-muted); }
+    .upload-label strong { color: var(--accent); }
+
+    .upload-file-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+    .upload-file-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .upload-file-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+    .upload-progress {
+      width: 80px; height: 4px; border-radius: 2px;
+      background: var(--surface2); overflow: hidden;
+    }
+    .upload-progress-bar {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.3s;
+    }
+
+    /* ── GITHUB SETTINGS MODAL ── */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(10,10,15,0.8);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.hidden { display: none; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: min(500px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .modal-desc { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+    .modal-desc a { color: var(--accent); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px;
+      z-index: 300;
+    }
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 14px;
+      color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      animation: slideIn 0.2s ease;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toast.success { border-color: rgba(74,222,128,0.3); }
+    .toast.error   { border-color: rgba(248,113,113,0.3); }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast.success .toast-dot { background: var(--success); }
+    .toast.error   .toast-dot { background: var(--danger); }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } }
+
+    /* Loading */
+    #loading-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10,10,15,0.88);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; z-index: 400;
+      font-size: 14px; color: var(--text-muted);
+    }
+    #loading-overlay.hidden { display: none; }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .form-actions { display: flex; gap: 10px; }
+
+    @media (max-width: 900px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; flex-direction: row; flex-wrap: wrap; padding: 16px; gap: 16px; }
+      .gh-card { margin-top: 0; }
+      .main { padding: 24px 16px; }
+      .field-row { grid-template-columns: 1fr; }
+      .stem-item { grid-template-columns: 1fr 1fr auto; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading-overlay" class="hidden">
+  <div class="spinner"></div>
+  <span id="loading-msg">処理中…</span>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- GitHub Settings Modal -->
+<div class="modal-backdrop hidden" id="gh-modal">
+  <div class="modal">
+    <p class="modal-title">⚙ GitHub 設定</p>
+    <p class="modal-desc">
+      <strong>Personal Access Token</strong> は
+      <a href="https://github.com/settings/tokens/new" target="_blank">こちら</a> で発行してください。<br>
+      スコープは <code>repo</code> のみ必要です。設定はブラウザのローカルストレージに保存されます。
+    </p>
+    <div class="field">
+      <label>GitHub Token <span class="label-hint">（repo スコープ）</span></label>
+      <input type="text" id="gh-token-input" placeholder="ghp_xxxxxxxxxxxx" />
+    </div>
+    <div class="field">
+      <label>リポジトリ <span class="label-hint">（owner/repo 形式）</span></label>
+      <input type="text" id="gh-repo-input" placeholder="yourname/stem-player" />
+    </div>
+    <div class="field">
+      <label>ブランチ</label>
+      <input type="text" id="gh-branch-input" placeholder="main" value="main" />
+    </div>
+    <div class="field">
+      <label>ステムファイルの保存先ディレクトリ</label>
+      <input type="text" id="gh-stems-dir-input" placeholder="stems" value="stems" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="gh-modal-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="gh-modal-save">保存して接続テスト</button>
+    </div>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="admin-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <p class="sidebar-logo">Stem Player <span>Admin</span></p>
+
+    <div>
+      <p class="nav-section-label">メニュー</p>
+      <button class="nav-item active" data-page="songs-page">🎵 楽曲一覧</button>
+      <button class="nav-item" data-page="add-page">➕ 楽曲を追加</button>
+    </div>
+
+    <div class="gh-card">
+      <p class="gh-card-title">GitHub 接続</p>
+      <div class="gh-status">
+        <div class="gh-dot" id="gh-dot"></div>
+        <span id="gh-status-text">未設定</span>
+      </div>
+      <button class="gh-settings-btn" id="open-gh-modal">設定を変更</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Songs List Page -->
+    <div id="songs-page" class="page active">
+      <div class="page-header">
+        <p class="page-title">楽曲一覧</p>
+        <button class="btn btn-primary" data-page="add-page" id="goto-add">＋ 楽曲を追加</button>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;">
+        <table class="song-table">
+          <thead>
+            <tr>
+              <th>タイトル / アーティスト</th>
+              <th>ステム数</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="song-table-body">
+            <tr><td colspan="3" class="empty-table">楽曲がありません</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Add / Edit Page -->
+    <div id="add-page" class="page">
+      <div class="page-header">
+        <p class="page-title" id="form-page-title">楽曲を追加</p>
+        <button class="btn btn-secondary" data-page="songs-page">← 一覧に戻る</button>
+      </div>
+
+      <!-- Step 1: Info -->
+      <div class="form-card">
+        <p class="form-section-title">① 楽曲情報</p>
+        <div class="field-row">
+          <div class="field">
+            <label>タイトル <span class="label-hint">*必須</span></label>
+            <input type="text" id="f-title" placeholder="曲名" />
+          </div>
+          <div class="field">
+            <label>アーティスト</label>
+            <input type="text" id="f-artist" placeholder="アーティスト名" />
+          </div>
+        </div>
+        <div class="field">
+          <label>アートワーク URL <span class="label-hint">（省略可）</span></label>
+          <input type="url" id="f-artwork" placeholder="https://..." />
+        </div>
+      </div>
+
+      <!-- Step 2: Stems -->
+      <div class="form-card">
+        <p class="form-section-title">② ステムファイルをアップロード</p>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;">
+          MP3・WAV・OGG ファイルを選択してください。ファイル名がそのままステム名になります（後で変更可）。
+          アップロードすると GitHub の <code id="stems-dir-label">stems/</code> ディレクトリに保存されます。
+        </p>
+        <div class="upload-area" id="upload-area">
+          <input type="file" id="file-input" multiple accept="audio/*" />
+          <p class="upload-label">ここにドロップ、または <strong>クリックして選択</strong></p>
+        </div>
+        <div class="upload-file-list" id="upload-file-list"></div>
+      </div>
+
+      <!-- Step 3: Stem names -->
+      <div class="form-card" id="stems-form-card" style="display:none;">
+        <p class="form-section-title">③ ステム名を確認・編集</p>
+        <p style="font-size:13px;color:var(--text-muted);">アップロード後のファイルパスと表示名を確認してください。</p>
+        <div class="stems-list" id="stems-list"></div>
+        <button class="add-stem-btn" id="add-stem-btn">＋ ステムを手動追加（既存ファイルのパスを入力）</button>
+      </div>
+
+      <!-- Actions -->
+      <div class="form-actions">
+        <button class="btn btn-primary" id="save-btn">💾 保存して公開</button>
+        <button class="btn btn-secondary" data-page="songs-page">キャンセル</button>
+        <button class="btn btn-danger" id="delete-btn" style="display:none;">🗑 この楽曲を削除</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let songs = [];
+let editingIdx = -1; // -1 = new
+let pendingFiles = []; // { file, name, path, uploaded }
+let ghConfig = {};
+
+/* ═══════════════════════════════════════
+   BOOT
+═══════════════════════════════════════ */
+(async () => {
+  loadGhConfig();
+  await loadSongs();
+  renderSongTable();
+})();
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+document.querySelectorAll('[data-page]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.page;
+    if (target === 'add-page') openAddPage();
+    else showPage(target);
+  });
+});
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === id);
+  });
+}
+
+/* ═══════════════════════════════════════
+   GITHUB CONFIG
+═══════════════════════════════════════ */
+function loadGhConfig() {
+  try {
+    ghConfig = JSON.parse(localStorage.getItem('gh_config') || '{}');
+  } catch(e) { ghConfig = {}; }
+  updateGhStatus();
+  document.getElementById('stems-dir-label').textContent =
+    (ghConfig.stemsDir || 'stems') + '/';
+}
+
+function updateGhStatus() {
+  const dot  = document.getElementById('gh-dot');
+  const text = document.getElementById('gh-status-text');
+  if (ghConfig.token && ghConfig.repo) {
+    dot.className  = 'gh-dot ok';
+    text.textContent = ghConfig.repo;
+  } else {
+    dot.className  = 'gh-dot';
+    text.textContent = '未設定';
+  }
+}
+
+document.getElementById('open-gh-modal').addEventListener('click', () => {
+  document.getElementById('gh-token-input').value   = ghConfig.token  || '';
+  document.getElementById('gh-repo-input').value    = ghConfig.repo   || '';
+  document.getElementById('gh-branch-input').value  = ghConfig.branch || 'main';
+  document.getElementById('gh-stems-dir-input').value = ghConfig.stemsDir || 'stems';
+  document.getElementById('gh-modal').classList.remove('hidden');
+});
+document.getElementById('gh-modal-cancel').addEventListener('click', () => {
+  document.getElementById('gh-modal').classList.add('hidden');
+});
+document.getElementById('gh-modal-save').addEventListener('click', async () => {
+  const token    = document.getElementById('gh-token-input').value.trim();
+  const repo     = document.getElementById('gh-repo-input').value.trim();
+  const branch   = document.getElementById('gh-branch-input').value.trim() || 'main';
+  const stemsDir = document.getElementById('gh-stems-dir-input').value.trim() || 'stems';
+  if (!token || !repo) { showToast('Token とリポジトリは必須です', 'error'); return; }
+
+  showLoading(true, 'GitHub に接続テスト中…');
+  try {
+    const r = await ghAPI(`/repos/${repo}`, token);
+    if (r.id) {
+      ghConfig = { token, repo, branch, stemsDir };
+      localStorage.setItem('gh_config', JSON.stringify(ghConfig));
+      updateGhStatus();
+      document.getElementById('stems-dir-label').textContent = stemsDir + '/';
+      document.getElementById('gh-modal').classList.add('hidden');
+      showToast('GitHub に接続しました ✓', 'success');
+      await loadSongs();
+      renderSongTable();
+    } else {
+      showToast('接続に失敗しました。Token・リポジトリ名を確認してください', 'error');
+    }
+  } catch(e) {
+    showToast('エラー: ' + e.message, 'error');
+  }
+  showLoading(false);
+});
+
+/* ═══════════════════════════════════════
+   LOAD SONGS from GitHub
+═══════════════════════════════════════ */
+async function loadSongs() {
+  if (!ghConfig.token || !ghConfig.repo) return;
+  try {
+    const data = await ghAPI(`/repos/${ghConfig.repo}/contents/songs.json?ref=${ghConfig.branch || 'main'}`, ghConfig.token);
+    if (data.content) {
+      songs = JSON.parse(atob(data.content.replace(/\n/g, '')));
+    }
+  } catch(e) {
+    if (e.message.includes('404')) songs = [];
+    else console.error('load songs error', e);
+  }
+}
+
+/* ═══════════════════════════════════════
+   SAVE SONGS to GitHub
+═══════════════════════════════════════ */
+async function saveSongs() {
+  if (!ghConfig.token || !ghConfig.repo) {
+    showToast('先に GitHub の設定を行ってください', 'error'); return false;
+  }
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(songs, null, 2))));
+  // Get current SHA
+  let sha;
+  try {
+    const cur = await ghAPI(`/repos/${ghConfig.repo}/contents/songs.json?ref=${ghConfig.branch || 'main'}`, ghConfig.token);
+    sha = cur.sha;
+  } catch(e) { sha = undefined; }
+
+  const body = {
+    message: `Update songs.json [stem-player-admin]`,
+    content,
+    branch: ghConfig.branch || 'main',
+  };
+  if (sha) body.sha = sha;
+
+  await ghAPIPut(`/repos/${ghConfig.repo}/contents/songs.json`, ghConfig.token, body);
+  return true;
+}
+
+/* ═══════════════════════════════════════
+   RENDER SONG TABLE
+═══════════════════════════════════════ */
+function renderSongTable() {
+  const tbody = document.getElementById('song-table-body');
+  if (!songs.length) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty-table">楽曲がありません。「楽曲を追加」から追加してください。</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = songs.map((s, i) => `
+    <tr>
+      <td>
+        <p class="song-row-title">${s.title}</p>
+        ${s.artist ? `<p class="song-row-artist">${s.artist}</p>` : ''}
+      </td>
+      <td><span class="stem-badge">${s.stems.length} stems</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openEditPage(${i})">編集</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSong(${i})">削除</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+/* ═══════════════════════════════════════
+   ADD / EDIT PAGE
+═══════════════════════════════════════ */
+function openAddPage() {
+  editingIdx = -1;
+  pendingFiles = [];
+  document.getElementById('form-page-title').textContent = '楽曲を追加';
+  document.getElementById('f-title').value   = '';
+  document.getElementById('f-artist').value  = '';
+  document.getElementById('f-artwork').value = '';
+  document.getElementById('upload-file-list').innerHTML = '';
+  document.getElementById('stems-list').innerHTML = '';
+  document.getElementById('stems-form-card').style.display = 'none';
+  document.getElementById('delete-btn').style.display = 'none';
+  showPage('add-page');
+}
+
+function openEditPage(idx) {
+  editingIdx = idx;
+  const s = songs[idx];
+  pendingFiles = [];
+  document.getElementById('form-page-title').textContent = '楽曲を編集';
+  document.getElementById('f-title').value   = s.title  || '';
+  document.getElementById('f-artist').value  = s.artist || '';
+  document.getElementById('f-artwork').value = s.artwork || '';
+  document.getElementById('upload-file-list').innerHTML = '';
+  document.getElementById('delete-btn').style.display = '';
+
+  // Pre-fill existing stems
+  const stemsList = document.getElementById('stems-list');
+  stemsList.innerHTML = '';
+  s.stems.forEach((stem, i) => addStemItem(stem.name, stem.file, true));
+  document.getElementById('stems-form-card').style.display = '';
+
+  showPage('add-page');
+}
+
+/* ═══════════════════════════════════════
+   STEM ITEMS (display name + path)
+═══════════════════════════════════════ */
+function addStemItem(name, filePath, existing = false) {
+  const stemsList = document.getElementById('stems-list');
+  const idx = stemsList.children.length;
+  const div = document.createElement('div');
+  div.className = 'stem-item';
+  div.dataset.idx = idx;
+  div.innerHTML = `
+    <span class="stem-num">STEM ${idx + 1}</span>
+    <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
+      <input type="text" class="stem-name" placeholder="表示名（例: Drums）" value="${name || ''}" />
+      <input type="text" class="stem-path" placeholder="ファイルパス（例: stems/song1/drums.mp3）" value="${filePath || ''}" ${existing ? '' : 'readonly style="opacity:0.5;"'} />
+    </div>
+    <button class="stem-remove" title="削除">✕</button>`;
+  div.querySelector('.stem-remove').addEventListener('click', () => {
+    div.remove();
+    renumberStems();
+  });
+  stemsList.appendChild(div);
+}
+
+function renumberStems() {
+  document.querySelectorAll('.stem-item').forEach((el, i) => {
+    el.querySelector('.stem-num').textContent = `STEM ${i + 1}`;
+  });
+}
+
+document.getElementById('add-stem-btn').addEventListener('click', () => {
+  addStemItem('', '', true); // manually add with editable path
+});
+
+/* ═══════════════════════════════════════
+   FILE UPLOAD
+═══════════════════════════════════════ */
+const uploadArea = document.getElementById('upload-area');
+const fileInput  = document.getElementById('file-input');
+
+uploadArea.addEventListener('dragover',  e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files].filter(f => f.type.startsWith('audio/')));
+});
+fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
+
+function handleFiles(files) {
+  files.forEach(f => {
+    if (pendingFiles.find(p => p.file.name === f.file)) return;
+    const stemName = f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+    const title = (document.getElementById('f-title').value.trim() || 'untitled')
+      .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const dir = (ghConfig.stemsDir || 'stems') + '/' + title;
+    const path = dir + '/' + f.name;
+    pendingFiles.push({ file: f, name: stemName, path, uploaded: false });
+  });
+  renderUploadList();
+  // Show stems form card
+  if (pendingFiles.length) {
+    document.getElementById('stems-form-card').style.display = '';
+    syncStemItems();
+  }
+}
+
+function renderUploadList() {
+  const list = document.getElementById('upload-file-list');
+  list.innerHTML = pendingFiles.map((p, i) => `
+    <div class="upload-file-item">
+      <span class="upload-file-name">${p.file.name}</span>
+      <div class="upload-progress"><div class="upload-progress-bar" id="prog-${i}" style="width:${p.uploaded?100:0}%"></div></div>
+      <span style="font-size:11px;color:${p.uploaded?'var(--success)':'var(--text-muted)'}">
+        ${p.uploaded ? '✓ 完了' : '待機中'}
+      </span>
+    </div>`).join('');
+}
+
+function syncStemItems() {
+  const stemsList = document.getElementById('stems-list');
+  // Only add items that aren't already listed (by path)
+  const existingPaths = [...stemsList.querySelectorAll('.stem-path')].map(el => el.value);
+  pendingFiles.forEach(p => {
+    if (!existingPaths.includes(p.path)) {
+      addStemItem(p.name, p.path, false);
+    }
+  });
+}
+
+/* ═══════════════════════════════════════
+   UPLOAD FILES TO GITHUB
+═══════════════════════════════════════ */
+async function uploadFilesToGitHub() {
+  for (let i = 0; i < pendingFiles.length; i++) {
+    const p = pendingFiles[i];
+    if (p.uploaded) continue;
+    document.getElementById('loading-msg').textContent = `アップロード中… (${i+1}/${pendingFiles.length}) ${p.file.name}`;
+    const b64 = await fileToBase64(p.file);
+    // Check if file exists (get SHA if so)
+    let sha;
+    try {
+      const cur = await ghAPI(`/repos/${ghConfig.repo}/contents/${p.path}?ref=${ghConfig.branch||'main'}`, ghConfig.token);
+      sha = cur.sha;
+    } catch(e) { sha = undefined; }
+    const body = {
+      message: `Add stem: ${p.path}`,
+      content: b64,
+      branch: ghConfig.branch || 'main',
+    };
+    if (sha) body.sha = sha;
+    await ghAPIPut(`/repos/${ghConfig.repo}/contents/${encodeURIComponent(p.path).replace(/%2F/g,'/')}`, ghConfig.token, body);
+    p.uploaded = true;
+    const bar = document.getElementById(`prog-${i}`);
+    if (bar) bar.style.width = '100%';
+  }
+}
+
+/* ═══════════════════════════════════════
+   SAVE SONG
+═══════════════════════════════════════ */
+document.getElementById('save-btn').addEventListener('click', async () => {
+  if (!ghConfig.token || !ghConfig.repo) {
+    showToast('先に GitHub の設定を行ってください', 'error'); return;
+  }
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { showToast('タイトルは必須です', 'error'); return; }
+
+  // Collect stems
+  const stemItems = document.querySelectorAll('.stem-item');
+  const stems = [];
+  stemItems.forEach(el => {
+    const name = el.querySelector('.stem-name').value.trim();
+    const file = el.querySelector('.stem-path').value.trim();
+    if (name && file) stems.push({ name, file });
+  });
+  if (!stems.length) { showToast('ステムを1つ以上追加してください', 'error'); return; }
+
+  showLoading(true, 'ファイルをアップロード中…');
+
+  try {
+    // Upload audio files
+    if (pendingFiles.some(p => !p.uploaded)) {
+      await uploadFilesToGitHub();
+      renderUploadList();
+    }
+
+    // Build song object
+    const song = {
+      id: editingIdx >= 0 ? songs[editingIdx].id : Date.now().toString(36),
+      title,
+      artist: document.getElementById('f-artist').value.trim() || undefined,
+      artwork: document.getElementById('f-artwork').value.trim() || undefined,
+      stems
+    };
+    // Remove undefined keys
+    Object.keys(song).forEach(k => song[k] === undefined && delete song[k]);
+
+    if (editingIdx >= 0) songs[editingIdx] = song;
+    else songs.push(song);
+
+    document.getElementById('loading-msg').textContent = 'songs.json を更新中…';
+    const ok = await saveSongs();
+    if (ok) {
+      showToast(editingIdx >= 0 ? '楽曲を更新しました ✓' : '楽曲を追加しました ✓', 'success');
+      renderSongTable();
+      showPage('songs-page');
+    }
+  } catch(e) {
+    showToast('エラー: ' + e.message, 'error');
+    console.error(e);
+  }
+  showLoading(false);
+});
+
+/* ═══════════════════════════════════════
+   DELETE SONG
+═══════════════════════════════════════ */
+document.getElementById('delete-btn').addEventListener('click', () => {
+  if (editingIdx < 0) return;
+  deleteSong(editingIdx);
+});
+
+async function deleteSong(idx) {
+  const song = songs[idx];
+  if (!confirm(`「${song.title}」を削除しますか？\n（ステムファイル本体は削除されません）`)) return;
+  showLoading(true, '削除中…');
+  songs.splice(idx, 1);
+  try {
+    await saveSongs();
+    showToast('楽曲を削除しました', 'success');
+    renderSongTable();
+    showPage('songs-page');
+  } catch(e) {
+    showToast('エラー: ' + e.message, 'error');
+    songs.splice(idx, 0, song); // rollback
+  }
+  showLoading(false);
+}
+
+/* ═══════════════════════════════════════
+   GITHUB API HELPERS
+═══════════════════════════════════════ */
+async function ghAPI(path, token) {
+  const r = await fetch('https://api.github.com' + path, {
+    headers: {
+      Authorization: 'token ' + token,
+      Accept: 'application/vnd.github.v3+json',
+    }
+  });
+  if (!r.ok) throw new Error(`GitHub API ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function ghAPIPut(path, token, body) {
+  const r = await fetch('https://api.github.com' + path, {
+    method: 'PUT',
+    headers: {
+      Authorization: 'token ' + token,
+      Accept: 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`GitHub API PUT ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result.split(',')[1]);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showLoading(v, msg) {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('hidden', !v);
+  if (msg) document.getElementById('loading-msg').textContent = msg;
+}
+
+function showToast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="toast-dot"></span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+</script>
+</body>
+</html>
