@@ -647,19 +647,23 @@ function buildPlayerUI() {
       setPlayheadPct(pct);
     }
 
+    let wasPlyaing = false;
     function onDragEnd(e) {
       document.removeEventListener('mousemove', onDragMove);
       document.removeEventListener('mouseup',   onDragEnd);
       document.removeEventListener('touchmove', onDragMove);
       document.removeEventListener('touchend',  onDragEnd);
-      const pct = getClickPct(e.changedTouches ? {clientX: e.changedTouches[0].clientX} : e);
+      const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      const rect = tw.getBoundingClientRect();
+      const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
       pauseOffset = pct * duration;
-      if (isPlaying) { pausePlayback(); startPlayback(pauseOffset); }
+      if (wasPlyaing) startPlayback(pauseOffset);
     }
 
-    // クリックで即ジャンプ、ドラッグでスクラブ
     tw.addEventListener('mousedown', e => {
-      if (e.target === pdz || tw.contains(e.target)) {
+      if (tw.contains(e.target)) {
+        wasPlyaing = isPlaying;
+        if (isPlaying) pausePlayback();
         const pct = getClickPct(e);
         pauseOffset = pct * duration;
         setPlayheadPct(pct);
@@ -670,6 +674,8 @@ function buildPlayerUI() {
       }
     });
     tw.addEventListener('touchstart', e => {
+      wasPlyaing = isPlaying;
+      if (isPlaying) pausePlayback();
       const pct = getClickPct(e);
       pauseOffset = pct * duration;
       setPlayheadPct(pct);
