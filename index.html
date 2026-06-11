@@ -294,8 +294,27 @@
     .track-row.is-solo { border-color: var(--solo); background: rgba(245,158,11,0.06); }
     .track-row.solo-dimmed { opacity: 0.2; }
     .track-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .track-wave { flex: 1; height: 40px; display: flex; align-items: center; }
+    .track-wave {
+      flex: 1; height: 40px;
+      display: flex; align-items: center;
+      position: relative;
+    }
     .track-wave canvas { width: 100%; height: 100%; display: block; }
+    /* 再生ライン */
+    .playhead-line {
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(255,255,255,0.85);
+      box-shadow: 0 0 6px rgba(255,255,255,0.5);
+      border-radius: 1px;
+      pointer-events: none;
+      left: 0;
+      transform: translateX(-50%);
+      transition: opacity 0.15s;
+      opacity: 0;
+    }
+    .playhead-line.visible { opacity: 1; }
     .track-vol {
       -webkit-appearance: none; appearance: none;
       width: 80px; height: 3px; border-radius: 2px;
@@ -526,7 +545,7 @@ function buildPlayerUI() {
     row.id = `track-row-${i}`;
     row.innerHTML = `
       <span class="track-name">${t.name}</span>
-      <div class="track-wave"><canvas id="wave-${i}"></canvas></div>
+      <div class="track-wave"><canvas id="wave-${i}"></canvas><div class="playhead-line" id="ph-${i}"></div></div>
       <input type="range" class="track-vol" min="0" max="1" step="0.01" value="1" data-i="${i}" />
       <div class="track-btns">
         <button class="track-btn" id="solo-btn-${i}" data-i="${i}">SOLO</button>
@@ -599,6 +618,20 @@ function startPlayback(offset = 0) {
   document.getElementById('play-btn').textContent = '⏸';
   rafId = requestAnimationFrame(updateSeek);
 }
+function hidePlayheads() {
+  tracks.forEach((_, i) => {
+    const ph = document.getElementById(`ph-${i}`);
+    if (ph) ph.classList.remove('visible');
+  });
+}
+function setPlayheadPct(pct) {
+  tracks.forEach((_, i) => {
+    const ph = document.getElementById(`ph-${i}`);
+    if (!ph) return;
+    ph.classList.add('visible');
+    ph.style.left = (pct * 100) + '%';
+  });
+}
 function pausePlayback() {
   pauseOffset = audioCtx.currentTime - startTime;
   tracks.forEach(t => { try { t.source?.stop(); } catch(e){} t.source = null; });
@@ -612,6 +645,7 @@ function stopPlayback() {
   tracks.forEach(t => { try { t.source?.stop(); } catch(e){} t.source = null; });
   isPlaying = false;
   cancelAnimationFrame(rafId);
+  hidePlayheads();
 }
 function endPlayback() {
   isPlaying = false; pauseOffset = 0;
@@ -619,6 +653,7 @@ function endPlayback() {
   document.getElementById('play-btn').textContent = '▶';
   document.getElementById('seek-bar').value = 0;
   document.getElementById('time-current').textContent = '0:00';
+  hidePlayheads();
 }
 
 document.getElementById('play-btn').addEventListener('click', () => {
@@ -632,7 +667,9 @@ let seeking = false;
 seekBar.addEventListener('mousedown', () => { seeking = true; if (isPlaying) pausePlayback(); });
 seekBar.addEventListener('touchstart', () => { seeking = true; if (isPlaying) pausePlayback(); }, {passive:true});
 seekBar.addEventListener('input', () => {
-  document.getElementById('time-current').textContent = formatTime((+seekBar.value / 1000) * duration);
+  const pct = +seekBar.value / 1000;
+  document.getElementById('time-current').textContent = formatTime(pct * duration);
+  setPlayheadPct(pct);
 });
 seekBar.addEventListener('change', () => {
   pauseOffset = (+seekBar.value / 1000) * duration;
@@ -642,10 +679,28 @@ seekBar.addEventListener('change', () => {
 function updateSeek() {
   if (!isPlaying || seeking) return;
   const elapsed = audioCtx.currentTime - startTime;
+
+  // ループ折り返し
+  if (looping && elapsed >= duration) {
+    pausePlayback();
+    startPlayback(0);
+    return;
+  }
+
   const pct = Math.min(elapsed / duration, 1);
   seekBar.value = pct * 1000;
   document.getElementById('time-current').textContent = formatTime(elapsed);
+
+  // 各トラックの再生ラインを更新
+  tracks.forEach((_, i) => {
+    const ph = document.getElementById(`ph-${i}`);
+    if (!ph) return;
+    ph.classList.add('visible');
+    ph.style.left = (pct * 100) + '%';
+  });
+
   if (pct < 1) rafId = requestAnimationFrame(updateSeek);
+  else if (!looping) endPlayback();
 }
 
 /* mute/solo */
