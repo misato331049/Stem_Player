@@ -4,13 +4,13 @@
     "title": "曲名を入力してください",
     "artist": "アーティスト名を入力してください",
     "stems": [
-      { "name": "Drums",      "file": "stems/song1/0_Drums.mp3" },
-      { "name": "Bass",       "file": "stems/song1/1_Bass.mp3" },
-      { "name": "Percussion", "file": "stems/song1/2_Percussion.mp3" },
-      { "name": "Strings",    "file": "stems/song1/3_Strings.mp3" },
-      { "name": "Synth",      "file": "stems/song1/4_Synth.mp3" },
-      { "name": "Other",      "file": "stems/song1/5_Other.mp3" },
-      { "name": "Woodwinds",  "file": "stems/song1/6_Woodwinds.mp3" }
+      { "name": "Drums",      "file": "stems/song1/0 Drums.mp3" },
+      { "name": "Bass",       "file": "stems/song1/1 Bass.mp3" },
+      { "name": "Percussion", "file": "stems/song1/2 Percussion.mp3" },
+      { "name": "Strings",    "file": "stems/song1/3 Strings.mp3" },
+      { "name": "Synth",      "file": "stems/song1/4 Synth.mp3" },
+      { "name": "Other",      "file": "stems/song1/5 Other.mp3" },
+      { "name": "Woodwinds",  "file": "stems/song1/6 Woodwinds.mp3" }
     ]
   }
 ]
