@@ -306,6 +306,27 @@
     }
     .play-btn:hover { transform: scale(1.06); opacity: 0.9; }
 
+    /* 再開オーバーレイ */
+    #resume-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10,10,15,0.88);
+      z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px;
+    }
+    #resume-overlay.hidden { display: none; }
+    #resume-overlay p { font-size: 15px; color: var(--text-muted); }
+    #resume-btn {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; color: #fff; font-size: 28px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 24px rgba(124,109,250,0.5);
+    }
+
     /* Tracks */
     .tracks-area {
       flex: 1;
@@ -424,6 +445,13 @@
 <div id="loading-overlay" class="hidden">
   <div class="spinner"></div>
   <span id="loading-msg">読み込み中…</span>
+</div>
+
+<!-- 再開オーバーレイ -->
+<div id="resume-overlay" class="hidden">
+  <p>バックグラウンドから戻りました</p>
+  <button id="resume-btn">▶</button>
+  <p style="font-size:13px;">タップして再開</p>
 </div>
 
 <!-- ── LIST SCREEN ── -->
@@ -913,40 +941,36 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(drawAllWaveforms, 200);
 });
 
-/* ── モバイル対応：バックグラウンドから戻った時にAudioContextを再開 ── */
-document.addEventListener('visibilitychange', async () => {
+/* ── モバイル対応：バックグラウンドから戻った時に再開オーバーレイを表示 ── */
+document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
-    // バックグラウンドに行く時に現在位置を保存
     if (isPlaying && audioCtx) {
       pauseOffset = audioCtx.currentTime - startTime;
+      pausePlayback();
     }
   }
-
-  if (document.visibilityState === 'visible' && audioCtx) {
-    try {
-      await audioCtx.resume();
-    } catch(e) {}
-
-    // 再生中だったら再スタート
-    if (isPlaying) {
-      // 一旦全ソースを止めて再生し直す
-      tracks.forEach(t => { try { t.source?.stop(); } catch(e){} t.source = null; });
-      isPlaying = false;
-      cancelAnimationFrame(rafId);
-      startPlayback(pauseOffset);
+  if (document.visibilityState === 'visible' && audioCtx && pauseOffset > 0) {
+    // プレイヤー画面が表示中なら再開オーバーレイを出す
+    if (document.getElementById('player-screen').classList.contains('active')) {
+      document.getElementById('resume-overlay').classList.remove('hidden');
     }
   }
 });
 
-window.addEventListener('pageshow', async () => {
-  if (!audioCtx) return;
-  try { await audioCtx.resume(); } catch(e) {}
-  if (isPlaying) {
-    tracks.forEach(t => { try { t.source?.stop(); } catch(e){} t.source = null; });
-    isPlaying = false;
-    cancelAnimationFrame(rafId);
-    startPlayback(pauseOffset);
+window.addEventListener('pageshow', () => {
+  if (audioCtx && pauseOffset > 0) {
+    if (document.getElementById('player-screen').classList.contains('active')) {
+      document.getElementById('resume-overlay').classList.remove('hidden');
+    }
   }
+});
+
+document.getElementById('resume-btn').addEventListener('click', async () => {
+  document.getElementById('resume-overlay').classList.add('hidden');
+  if (audioCtx && audioCtx.state === 'suspended') {
+    await audioCtx.resume();
+  }
+  startPlayback(pauseOffset);
 });
 
 document.getElementById('play-btn').addEventListener('touchstart', async () => {
