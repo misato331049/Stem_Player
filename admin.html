@@ -624,37 +624,52 @@ document.getElementById('gh-modal-save').addEventListener('click', async () => {
 async function loadSongs() {
   if (!ghConfig.token || !ghConfig.repo) return;
   try {
-    const data = await ghAPI(`/repos/${ghConfig.repo}/contents/songs.json?ref=${ghConfig.branch || 'main'}`, ghConfig.token);
-    if (data.content) {
-      songs = JSON.parse(atob(data.content.replace(/\n/g, '')));
-    }
+    // Raw APIで直接JSONテキストを取得（エンコード問題を回避）
+    const branch = ghConfig.branch || 'main';
+    const url = `https://raw.githubusercontent.com/${ghConfig.repo}/${branch}/songs.json?_=${Date.now()}`;
+    const r = await fetch(url, { cache: 'no-store' });
+    if (r.status === 404) { songs = []; return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    songs = await r.json();
   } catch(e) {
-    if (e.message.includes('404')) songs = [];
-    else console.error('load songs error', e);
+    console.error('load songs error', e);
+    songs = [];
   }
 }
 
 /* ═══════════════════════════════════════
    SAVE SONGS to GitHub
 ═══════════════════════════════════════ */
+function utf8ToBase64(str) {
+  // 日本語などマルチバイト文字を正しくBase64エンコード
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+
+async function getSongsSHA() {
+  // 毎回必ず最新SHAをGitHub APIから取得
+  try {
+    const branch = ghConfig.branch || 'main';
+    const data = await ghAPI(
+      `/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}&ts=${Date.now()}`,
+      ghConfig.token
+    );
+    return data.sha;
+  } catch(e) {
+    if (e.message.includes('404')) return undefined;
+    throw e;
+  }
+}
+
 async function saveSongs() {
   if (!ghConfig.token || !ghConfig.repo) {
     showToast('先に GitHub の設定を行ってください', 'error'); return false;
   }
-  const content = btoa(unescape(encodeURIComponent(JSON.stringify(songs, null, 2))));
-
-  // 常に直前に最新SHAを取得（キャッシュ回避）
-  let sha;
-  try {
-    const cur = await ghAPI(
-      `/repos/${ghConfig.repo}/contents/songs.json?ref=${ghConfig.branch || 'main'}&_=${Date.now()}`,
-      ghConfig.token
-    );
-    sha = cur.sha;
-  } catch(e) {
-    if (!e.message.includes('404')) throw e;
-    sha = undefined; // ファイルが存在しない場合は新規作成
-  }
+  const jsonStr = JSON.stringify(songs, null, 2);
+  const content = utf8ToBase64(jsonStr);
+  const sha = await getSongsSHA();
 
   const body = {
     message: `Update songs.json [stem-player-admin]`,
