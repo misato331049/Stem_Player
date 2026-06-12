@@ -642,12 +642,19 @@ async function saveSongs() {
     showToast('先に GitHub の設定を行ってください', 'error'); return false;
   }
   const content = btoa(unescape(encodeURIComponent(JSON.stringify(songs, null, 2))));
-  // Get current SHA
+
+  // 常に直前に最新SHAを取得（キャッシュ回避）
   let sha;
   try {
-    const cur = await ghAPI(`/repos/${ghConfig.repo}/contents/songs.json?ref=${ghConfig.branch || 'main'}`, ghConfig.token);
+    const cur = await ghAPI(
+      `/repos/${ghConfig.repo}/contents/songs.json?ref=${ghConfig.branch || 'main'}&_=${Date.now()}`,
+      ghConfig.token
+    );
     sha = cur.sha;
-  } catch(e) { sha = undefined; }
+  } catch(e) {
+    if (!e.message.includes('404')) throw e;
+    sha = undefined; // ファイルが存在しない場合は新規作成
+  }
 
   const body = {
     message: `Update songs.json [stem-player-admin]`,
