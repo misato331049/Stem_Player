@@ -624,61 +624,72 @@ document.getElementById('gh-modal-save').addEventListener('click', async () => {
 async function loadSongs() {
   if (!ghConfig.token || !ghConfig.repo) return;
   try {
-    // Raw APIで直接JSONテキストを取得（エンコード問題を回避）
     const branch = ghConfig.branch || 'main';
-    const url = `https://raw.githubusercontent.com/${ghConfig.repo}/${branch}/songs.json?_=${Date.now()}`;
-    const r = await fetch(url, { cache: 'no-store' });
-    if (r.status === 404) { songs = []; return; }
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    songs = await r.json();
+    // Contents APIで取得 → base64デコードはTextDecoderで正確に処理
+    const data = await ghAPI(
+      `/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}`,
+      ghConfig.token
+    );
+    if (data.content) {
+      const b64 = data.content.replace(/\s/g, '');
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const text = new TextDecoder('utf-8').decode(bytes);
+      songs = JSON.parse(text);
+    }
   } catch(e) {
-    console.error('load songs error', e);
-    songs = [];
+    if (e.message.includes('404')) songs = [];
+    else console.error('load songs error', e);
   }
 }
 
 /* ═══════════════════════════════════════
    SAVE SONGS to GitHub
 ═══════════════════════════════════════ */
-function utf8ToBase64(str) {
-  // 日本語などマルチバイト文字を正しくBase64エンコード
+function encodeUtf8Base64(str) {
   const bytes = new TextEncoder().encode(str);
   let binary = '';
-  bytes.forEach(b => binary += String.fromCharCode(b));
-  return btoa(binary);
-}
-
-async function getSongsSHA() {
-  // 毎回必ず最新SHAをGitHub APIから取得
-  try {
-    const branch = ghConfig.branch || 'main';
-    const data = await ghAPI(
-      `/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}&ts=${Date.now()}`,
-      ghConfig.token
-    );
-    return data.sha;
-  } catch(e) {
-    if (e.message.includes('404')) return undefined;
-    throw e;
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
+  return btoa(binary);
 }
 
 async function saveSongs() {
   if (!ghConfig.token || !ghConfig.repo) {
     showToast('先に GitHub の設定を行ってください', 'error'); return false;
   }
-  const jsonStr = JSON.stringify(songs, null, 2);
-  const content = utf8ToBase64(jsonStr);
-  const sha = await getSongsSHA();
 
-  const body = {
-    message: `Update songs.json [stem-player-admin]`,
-    content,
-    branch: ghConfig.branch || 'main',
-  };
+  const jsonStr = JSON.stringify(songs, null, 2);
+  const content = encodeUtf8Base64(jsonStr);
+  const branch  = ghConfig.branch || 'main';
+
+  // 保存直前に毎回最新SHAを取得（409対策）
+  let sha;
+  try {
+    const cur = await ghAPI(
+      `/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}`,
+      ghConfig.token
+    );
+    sha = cur.sha;
+  } catch(e) {
+    if (!e.message.includes('404')) throw e;
+  }
+
+  const body = { message: 'Update songs.json', content, branch };
   if (sha) body.sha = sha;
 
-  await ghAPIPut(`/repos/${ghConfig.repo}/contents/songs.json`, ghConfig.token, body);
+  const result = await ghAPIPut(
+    `/repos/${ghConfig.repo}/contents/songs.json`,
+    ghConfig.token,
+    body
+  );
+
+  // 次回保存用にSHAを更新
+  // （連続保存時の409を防ぐため最新SHAをメモリに保持）
+  if (result?.content?.sha) {
+    window._lastSongsSHA = result.content.sha;
+  }
+
   return true;
 }
 
@@ -948,6 +959,7 @@ async function deleteSong(idx) {
 ═══════════════════════════════════════ */
 async function ghAPI(path, token) {
   const r = await fetch('https://api.github.com' + path, {
+    cache: 'no-store',
     headers: {
       Authorization: 'token ' + token,
       Accept: 'application/vnd.github.v3+json',
