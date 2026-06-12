@@ -912,6 +912,41 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(drawAllWaveforms, 200);
 });
+
+/* ── モバイル対応：バックグラウンドから戻った時にAudioContextを再開 ── */
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && audioCtx) {
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+    // 再生中だったのに止まっていたら再開
+    if (isPlaying && audioCtx.state === 'running') {
+      const elapsed = audioCtx.currentTime - startTime;
+      if (elapsed >= duration && !looping) {
+        endPlayback();
+      }
+    }
+  }
+  if (document.visibilityState === 'hidden' && isPlaying) {
+    // バックグラウンド時は現在位置を記録しておく
+    pauseOffset = audioCtx.currentTime - startTime;
+    startTime = audioCtx.currentTime - pauseOffset;
+  }
+});
+
+// iOSのPageShow（スワイプバックから戻った時）
+window.addEventListener('pageshow', async () => {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    await audioCtx.resume();
+  }
+});
+
+// プレイボタンタップ時にもresume（iOSの制限対応）
+document.getElementById('play-btn').addEventListener('touchstart', async () => {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    await audioCtx.resume();
+  }
+}, { passive: true });
 </script>
 </body>
 </html>
