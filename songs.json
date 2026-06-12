@@ -1,76 +1,16 @@
 [
   {
     "id": "song1",
-    "title": "パレード2",
-    "artist": "土谷美聡",
+    "title": "Song 1",
+    "artist": "Artist",
     "stems": [
-      {
-        "name": "Drums",
-        "file": "stems/song1/0 Drums.mp3"
-      },
-      {
-        "name": "Bass",
-        "file": "stems/song1/1 Bass.mp3"
-      },
-      {
-        "name": "Percussion",
-        "file": "stems/song1/2 Percussion.mp3"
-      },
-      {
-        "name": "Strings",
-        "file": "stems/song1/3 Strings.mp3"
-      },
-      {
-        "name": "Synth",
-        "file": "stems/song1/4 Synth.mp3"
-      },
-      {
-        "name": "Other",
-        "file": "stems/song1/5 Other.mp3"
-      },
-      {
-        "name": "Woodwinds",
-        "file": "stems/song1/6 Woodwinds.mp3"
-      }
-    ]
-  },
-  {
-    "id": "mq9przvk",
-    "title": "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¬ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¼ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ3",
-    "artist": "ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¤ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¿ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨",
-    "stems": [
-      {
-        "name": "Drums",
-        "file": "stems/untitled/0 Drums.wav"
-      },
-      {
-        "name": "Bass",
-        "file": "stems/untitled/1 Bass.wav"
-      },
-      {
-        "name": "2 Guitar",
-        "file": "stems/untitled/2 Guitar.wav"
-      },
-      {
-        "name": "Keyboard",
-        "file": "stems/untitled/3 Keyboard.wav"
-      },
-      {
-        "name": "Percussion",
-        "file": "stems/untitled/4 Percussion.wav"
-      },
-      {
-        "name": "Synth",
-        "file": "stems/untitled/5 Synth.wav"
-      },
-      {
-        "name": "Other",
-        "file": "stems/untitled/6 Other.wav"
-      },
-      {
-        "name": "Brass",
-        "file": "stems/untitled/7 Brass.wav"
-      }
+      { "name": "Drums",      "file": "stems/song1/0 Drums.mp3" },
+      { "name": "Bass",       "file": "stems/song1/1 Bass.mp3" },
+      { "name": "Percussion", "file": "stems/song1/2 Percussion.mp3" },
+      { "name": "Strings",    "file": "stems/song1/3 Strings.mp3" },
+      { "name": "Synth",      "file": "stems/song1/4 Synth.mp3" },
+      { "name": "Other",      "file": "stems/song1/5 Other.mp3" },
+      { "name": "Woodwinds",  "file": "stems/song1/6 Woodwinds.mp3" }
     ]
   }
 ]
