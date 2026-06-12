@@ -625,16 +625,14 @@ async function loadSongs() {
   if (!ghConfig.token || !ghConfig.repo) return;
   try {
     const branch = ghConfig.branch || 'main';
-    // Contents APIで取得 → base64デコードはTextDecoderで正確に処理
     const data = await ghAPI(
       `/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}`,
       ghConfig.token
     );
     if (data.content) {
-      const b64 = data.content.replace(/\s/g, '');
+      const b64   = data.content.replace(/\s/g, '');
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const text = new TextDecoder('utf-8').decode(bytes);
-      songs = JSON.parse(text);
+      songs = JSON.parse(new TextDecoder('utf-8').decode(bytes));
     }
   } catch(e) {
     if (e.message.includes('404')) songs = [];
@@ -643,53 +641,21 @@ async function loadSongs() {
 }
 
 /* ═══════════════════════════════════════
-   SAVE SONGS to GitHub
+   SAVE SONGS — ダウンロード方式
+   songs.json をブラウザにダウンロードし
+   GitHubに手動アップロードしてもらう
 ═══════════════════════════════════════ */
-function encodeUtf8Base64(str) {
-  const bytes = new TextEncoder().encode(str);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-async function saveSongs() {
-  if (!ghConfig.token || !ghConfig.repo) {
-    showToast('先に GitHub の設定を行ってください', 'error'); return false;
-  }
-
+function saveSongs() {
   const jsonStr = JSON.stringify(songs, null, 2);
-  const content = encodeUtf8Base64(jsonStr);
-  const branch  = ghConfig.branch || 'main';
-
-  // 保存直前に毎回最新SHAを取得（409対策）
-  let sha;
-  try {
-    const cur = await ghAPI(
-      `/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}`,
-      ghConfig.token
-    );
-    sha = cur.sha;
-  } catch(e) {
-    if (!e.message.includes('404')) throw e;
-  }
-
-  const body = { message: 'Update songs.json', content, branch };
-  if (sha) body.sha = sha;
-
-  const result = await ghAPIPut(
-    `/repos/${ghConfig.repo}/contents/songs.json`,
-    ghConfig.token,
-    body
-  );
-
-  // 次回保存用にSHAを更新
-  // （連続保存時の409を防ぐため最新SHAをメモリに保持）
-  if (result?.content?.sha) {
-    window._lastSongsSHA = result.content.sha;
-  }
-
+  const blob    = new Blob([jsonStr], { type: 'application/json' });
+  const url     = URL.createObjectURL(blob);
+  const a       = document.createElement('a');
+  a.href        = url;
+  a.download    = 'songs.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
   return true;
 }
 
@@ -882,7 +848,6 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   const title = document.getElementById('f-title').value.trim();
   if (!title) { showToast('タイトルは必須です', 'error'); return; }
 
-  // Collect stems
   const stemItems = document.querySelectorAll('.stem-item');
   const stems = [];
   stemItems.forEach(el => {
@@ -895,33 +860,46 @@ document.getElementById('save-btn').addEventListener('click', async () => {
   showLoading(true, 'ファイルをアップロード中…');
 
   try {
-    // Upload audio files
+    // ステムファイルのみGitHub APIでアップロード
     if (pendingFiles.some(p => !p.uploaded)) {
       await uploadFilesToGitHub();
       renderUploadList();
     }
 
-    // Build song object
+    // songs配列を更新
     const song = {
       id: editingIdx >= 0 ? songs[editingIdx].id : Date.now().toString(36),
       title,
-      artist: document.getElementById('f-artist').value.trim() || undefined,
+      artist:  document.getElementById('f-artist').value.trim()  || undefined,
       artwork: document.getElementById('f-artwork').value.trim() || undefined,
       stems
     };
-    // Remove undefined keys
     Object.keys(song).forEach(k => song[k] === undefined && delete song[k]);
-
     if (editingIdx >= 0) songs[editingIdx] = song;
     else songs.push(song);
 
-    document.getElementById('loading-msg').textContent = 'songs.json を更新中…';
-    const ok = await saveSongs();
-    if (ok) {
-      showToast(editingIdx >= 0 ? '楽曲を更新しました ✓' : '楽曲を追加しました ✓', 'success');
-      renderSongTable();
-      showPage('songs-page');
-    }
+    // songs.json をダウンロード
+    document.getElementById('loading-msg').textContent = 'songs.json を生成中…';
+    saveSongs();
+
+    showToast('songs.json をダウンロードしました ✓', 'success');
+    renderSongTable();
+    showPage('songs-page');
+
+    // GitHubへのアップロード案内
+    setTimeout(() => {
+      alert(
+        '📁 songs.json をダウンロードしました。\n\n' +
+        '次の手順でGitHubに反映してください：\n' +
+        '① GitHub の Stem_Player リポジトリを開く\n' +
+        '② songs.json をクリック\n' +
+        '③ 鉛筆アイコン（編集）をクリック\n' +
+        '④ Cmd+A で全選択 → 削除\n' +
+        '⑤ ダウンロードした songs.json の内容を貼り付け\n' +
+        '⑥ Commit changes'
+      );
+    }, 500);
+
   } catch(e) {
     showToast('エラー: ' + e.message, 'error');
     console.error(e);
@@ -940,18 +918,11 @@ document.getElementById('delete-btn').addEventListener('click', () => {
 async function deleteSong(idx) {
   const song = songs[idx];
   if (!confirm(`「${song.title}」を削除しますか？\n（ステムファイル本体は削除されません）`)) return;
-  showLoading(true, '削除中…');
   songs.splice(idx, 1);
-  try {
-    await saveSongs();
-    showToast('楽曲を削除しました', 'success');
-    renderSongTable();
-    showPage('songs-page');
-  } catch(e) {
-    showToast('エラー: ' + e.message, 'error');
-    songs.splice(idx, 0, song); // rollback
-  }
-  showLoading(false);
+  saveSongs();
+  showToast('songs.json をダウンロードしました。GitHubに反映してください ✓', 'success');
+  renderSongTable();
+  showPage('songs-page');
 }
 
 /* ═══════════════════════════════════════
