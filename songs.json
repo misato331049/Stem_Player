@@ -4,8 +4,13 @@
     "title": "Rock",
     "artist": "みさと",
     "artwork": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+    "description": "この曲は非常にロックです。\nロックすぎて笑えてきます。なんだこれは。ちょーウケるんですけど。",
     "links": {
-      "youtube": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1"
+      "purchase": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+      "streaming": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+      "youtube": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+      "instagram": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+      "twitter": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1"
     },
     "stems": [
       {
