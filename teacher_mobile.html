@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>レッスン管理 – 講師</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f8f7f4;--surface:#ffffff;--border:#e8e6e0;--border2:#d4d0c8;
+  --text:#1a1917;--text2:#6b6860;--text3:#9b9890;
+  --blue:#185FA5;--blue-light:#E6F1FB;--blue-dark:#0C447C;
+  --green:#3B6D11;--green-light:#EAF3DE;
+  --amber:#854F0B;--amber-light:#FAEEDA;
+  --red:#791F1F;--red-light:#FCEBEB;
+  --radius:12px;--radius-sm:8px;
+  --font:'Hiragino Kaku Gothic ProN','Hiragino Sans',Meiryo,sans-serif;
+  --nav-h:64px;--header-h:56px;
+}
+html,body{height:100%;font-family:var(--font);color:var(--text);font-size:15px;background:var(--bg);overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* HEADER */
+.header{height:var(--header-h);background:var(--blue);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+.header-logo{width:32px;height:32px;background:rgba(255,255,255,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+.header-title{font-size:16px;font-weight:700;flex:1;color:#fff;letter-spacing:-.3px}
+.header-badge{background:var(--red);color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px calc(var(--nav-h) + 16px);-webkit-overflow-scrolling:touch}
+.page{display:none}.page.active{display:block}
+
+/* BOTTOM NAV */
+.bottom-nav{height:var(--nav-h);background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:stretch;flex-shrink:0;position:fixed;bottom:0;left:0;right:0;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--text3);font-size:10px;font-weight:500;font-family:var(--font);border:none;background:none;position:relative;padding:6px 2px;transition:color .15s}
+.nav-btn.active{color:var(--blue)}
+.nav-btn i{font-size:22px}
+.nav-badge{position:absolute;top:6px;right:calc(50% - 18px);width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--surface)}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+
+/* STAT GRID */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.stat-label{font-size:11px;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.stat-val{font-size:28px;font-weight:800;letter-spacing:-.5px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600}
+.b-blue{background:var(--blue-light);color:var(--blue-dark)}
+.b-green{background:var(--green-light);color:var(--green)}
+.b-amber{background:var(--amber-light);color:var(--amber)}
+.b-gray{background:#F1EFE8;color:#5F5E5A}
+.b-red{background:var(--red-light);color:var(--red)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-family:var(--font);font-weight:600;border:1px solid var(--border2);background:var(--surface);color:var(--text);-webkit-appearance:none}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn-primary:active{background:var(--blue-dark)}
+.btn-danger{background:var(--red);color:#fff;border-color:var(--red)}
+.btn-block{width:100%}
+.btn-sm{padding:8px 14px;font-size:13px}
+.btn:disabled{opacity:.4;pointer-events:none}
+
+/* FORMS */
+.form-group{margin-bottom:14px}
+.lbl{font-size:12px;color:var(--text2);font-weight:700;margin-bottom:6px;display:block}
+input,select,textarea{font-family:var(--font);font-size:15px;border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 14px;background:var(--surface);color:var(--text);outline:none;width:100%;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%236b6860'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+textarea{resize:vertical;min-height:90px;line-height:1.6}
+
+/* LOGIN */
+.login-wrap{min-height:calc(100vh - var(--header-h));display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 22px;width:100%;max-width:340px}
+.login-icon{width:56px;height:56px;border-radius:14px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:var(--blue);font-size:28px}
+
+/* STUDENT ROW */
+.student-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.student-row:last-child{border-bottom:none}
+.student-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.student-name{font-size:15px;font-weight:700}
+.student-info{font-size:12px;color:var(--text2);margin-top:2px}
+
+/* REQUEST CARD */
+.req-card{border:1px solid #FAC775;border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:var(--amber-light)}
+
+/* NOTICE IN LIST */
+.notice-item{border-bottom:1px solid var(--border);padding:14px 0}
+.notice-item:last-child{border-bottom:none}
+.notice-item-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.notice-item-meta{font-size:12px;color:var(--text2);margin-bottom:8px}
+.notice-reply-box{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px;font-size:13px}
+
+/* FILE LINK */
+.file-link{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--blue-light);color:var(--blue-dark);border-radius:8px;padding:10px 12px;margin-bottom:8px;text-decoration:none}
+.file-link i{font-size:18px;flex-shrink:0}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(var(--nav-h)+12px);left:16px;right:16px;color:#fff;padding:13px 16px;border-radius:var(--radius-sm);font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;text-align:center;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25)}
+
+/* LOADING */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text3);font-size:14px;gap:8px}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<script>
+const SUPABASE_URL = 'https://gdsrcbqmzcakzldizsrv.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_1kvfIoWeos6iH0N1N3W15g_gqf-Z8Aj'
+const TEACHER_PASSWORD = null
+</script>
+
+<div id="toast" class="toast"></div>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo"><i class="ti ti-shield-check"></i></div>
+    <div class="header-title">レッスン管理（講師）</div>
+    <span id="req-header-badge" style="display:none" class="header-badge">!</span>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="main-content">
+
+    <!-- LOGIN -->
+    <div class="page active" id="page-login">
+      <div class="login-wrap">
+        <div class="login-card">
+          <div class="login-icon"><i class="ti ti-shield-check"></i></div>
+          <div style="text-align:center;font-size:20px;font-weight:700;margin-bottom:6px">講師ログイン</div>
+          <div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:22px">パスワードを入力してください</div>
+          <div class="form-group">
+            <label class="lbl">パスワード</label>
+            <input type="password" id="teacher-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doTeacherLogin()">
+          </div>
+          <button class="btn btn-primary btn-block" onclick="doTeacherLogin()">
+            <i class="ti ti-login"></i> ログイン
+          </button>
+          <div id="pw-error" style="margin-top:10px;font-size:13px;color:var(--red);text-align:center;display:none">
+            <i class="ti ti-alert-circle"></i> パスワードが違います
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">生徒状況</div>
+          <input id="dash-search" placeholder="名前で検索" oninput="renderMobileDash()" style="width:140px;font-size:13px;padding:8px 10px">
+        </div>
+        <div id="dash-list"><div class="loading"><div class="spinner"></div>読み込み中...</div></div>
+      </div>
+    </div>
+
+    <!-- REQUESTS (振替相談) -->
+    <div class="page" id="page-requests">
+      <div class="card">
+        <div class="card-title">振替相談一覧</div>
+        <div style="font-size:13px;color:var(--text2);background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;border-left:3px solid var(--blue)">振替は原則なし。前月以内の相談のみ受付可能。確実な振替をお約束するものではありません。</div>
+        <div id="requests-list"><div class="loading"><div class="spinner"></div>読み込み中...</div></div>
+      </div>
+    </div>
+
+    <!-- NOTICES -->
+    <div class="page" id="page-notices">
+      <!-- 送信フォーム -->
+      <div class="card">
+        <div class="card-title">お知らせを送信</div>
+        <div class="form-group">
+          <label class="lbl">タイトル</label>
+          <input id="notice-title" placeholder="例）6月のレッスン資料について">
+        </div>
+        <div class="form-group">
+          <label class="lbl">本文・URL</label>
+          <textarea id="notice-body" placeholder="例）今月のレッスン資料はこちらです。&#10;https://drive.google.com/..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="lbl">ファイル添付（PDF・mp3）</label>
+          <input type="file" id="notice-file-input" accept=".pdf,.mp3,audio/mpeg,application/pdf" multiple style="font-size:13px;padding:10px">
+          <div id="notice-file-preview" style="margin-top:8px"></div>
+        </div>
+        <div class="form-group">
+          <label class="lbl">送信先</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <button class="btn btn-sm" style="flex:1" onclick="selectAllStudents(true)">全員選択</button>
+            <button class="btn btn-sm" style="flex:1" onclick="selectAllStudents(false)">全員解除</button>
+          </div>
+          <div id="notice-student-list" style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px"></div>
+          <div id="notice-count" style="font-size:12px;color:var(--text2);margin-top:6px;text-align:right"></div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="sendMobileNotice()">
+          <i class="ti ti-send"></i> 送信する
+        </button>
+      </div>
+      <!-- 送信済みリスト -->
+      <div class="card">
+        <div class="card-title">送信済みお知らせ</div>
+        <div id="notices-sent-list"><div class="loading"><div class="spinner"></div>読み込み中...</div></div>
+      </div>
+    </div>
+
+    <!-- STUDENTS -->
+    <div class="page" id="page-students">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">登録済み生徒</div>
+          <input id="student-search" placeholder="名前で検索" oninput="renderMobileStudents()" style="width:130px;font-size:13px;padding:8px 10px">
+        </div>
+        <div id="students-list"><div class="loading"><div class="spinner"></div>読み込み中...</div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav" id="bottom-nav" style="display:none">
+    <button class="nav-btn active" id="nav-dashboard" onclick="switchTeacherPage('dashboard')">
+      <i class="ti ti-layout-dashboard"></i><span>ダッシュ</span>
+    </button>
+    <button class="nav-btn" id="nav-requests" onclick="switchTeacherPage('requests')">
+      <i class="ti ti-switch-horizontal"></i><span>振替相談</span>
+      <span class="nav-badge" id="req-nav-badge" style="display:none"></span>
+    </button>
+    <button class="nav-btn" id="nav-notices" onclick="switchTeacherPage('notices')">
+      <i class="ti ti-bell-ringing"></i><span>お知らせ</span>
+      <span class="nav-badge" id="notice-nav-badge" style="display:none"></span>
+    </button>
+    <button class="nav-btn" id="nav-students" onclick="switchTeacherPage('students')">
+      <i class="ti ti-users"></i><span>生徒</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+const isConfigured = SUPABASE_URL !== 'YOUR_SUPABASE_URL'
+const sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null
+
+let students=[], lessonDates={}, notices=[], requests=[], approvedAbsences=[], manualTransfers=[]
+let selectedMonth=new Date().getMonth()+1
+let noticeSelectedFiles=[]
+
+const AVATAR_COLORS=[['#DBEAFE','#1E40AF'],['#D1FAE5','#065F46'],['#FEF3C7','#92400E'],['#EDE9FE','#4C1D95'],['#FCE7F3','#9D174D'],['#E0F2FE','#0C447C']]
+function initials(n){const p=n.trim().split(/\s+/);return p.length>=2?p[0][0]+p[1][0]:n.slice(0,2)}
+
+function toast(msg,isError=false){
+  const el=document.getElementById('toast')
+  el.textContent=msg
+  el.style.background=isError?'#B91C1C':'#185FA5'
+  el.style.opacity='1'
+  clearTimeout(el._t)
+  el._t=setTimeout(()=>el.style.opacity='0',2800)
+}
+
+// ===== DATA =====
+async function loadAll(){
+  if(!sb) return
+  const [studs,dates,reqs,approved,trs,notcs]=await Promise.all([
+    sb.from('students').select('*').order('day').order('time'),
+    sb.from('lesson_dates').select('*').eq('month',selectedMonth),
+    sb.from('requests').select('*').eq('status','pending'),
+    sb.from('requests').select('*').eq('status','approved').eq('month',selectedMonth),
+    sb.from('manual_transfers').select('*').eq('month',selectedMonth),
+    sb.from('notices').select('*').order('created_at',{ascending:false})
+  ])
+  const sels=await sb.from('student_selections').select('*').eq('month',selectedMonth)
+
+  students=(studs.data||[]).map(s=>({
+    ...s,
+    selected:(sels.data||[]).filter(x=>x.student_id===s.id).map(x=>x.date),
+    requests:(reqs.data||[]).filter(x=>x.student_id===s.id)
+  }))
+  lessonDates={}
+  ;(dates.data||[]).forEach(r=>{if(!lessonDates[r.day])lessonDates[r.day]=[];lessonDates[r.day].push(r.date)})
+  requests=reqs.data||[]
+  approvedAbsences=(approved.data||[]).map(r=>({id:r.id,studentId:r.student_id,date:r.date,day:r.day||'',time:r.time||'',type:r.type,note:r.note,month:r.month}))
+  manualTransfers=trs.data||[]
+  notices=notcs.data||[]
+  updateBadges()
+}
+function updateBadges(){
+  const reqCount=requests.length
+  document.getElementById('req-header-badge').style.display=reqCount>0?'inline':'none'
+  document.getElementById('req-nav-badge').style.display=reqCount>0?'block':'none'
+  const unreplied=notices.reduce((s,n)=>s+(n.comments||[]).filter(c=>!c.reply).length,0)
+  document.getElementById('notice-nav-badge').style.display=unreplied>0?'block':'none'
+}
+
+// ===== LOGIN =====
+async function doTeacherLogin(){
+  const pw=document.getElementById('teacher-pw').value
+  if(!pw){toast('パスワードを入力してください',true);return}
+  document.getElementById('pw-error').style.display='none'
+
+  if(!sb){
+    // Supabase未設定時はデモ用
+    if(pw==='demo1234'){
+      document.getElementById('bottom-nav').style.display='flex'
+      switchTeacherPage('dashboard')
+    } else {
+      document.getElementById('pw-error').style.display='block'
+    }
+    return
+  }
+
+  // 元のindex_url.htmlと同じ：Supabase RPC関数でパスワード照合
+  try {
+    const btn=document.querySelector('#page-login .btn-primary')
+    btn.textContent='確認中...'
+    btn.disabled=true
+    const{data,error}=await sb.rpc('check_teacher_password',{input_password:pw})
+    btn.innerHTML='<i class="ti ti-login"></i> ログイン'
+    btn.disabled=false
+    if(error) throw error
+    if(data===true||data==='t'||data==='true'||data==true){
+      document.getElementById('bottom-nav').style.display='flex'
+      await loadAll()
+      renderMobileNoticeStudentList()
+      switchTeacherPage('dashboard')
+    } else {
+      document.getElementById('pw-error').style.display='block'
+    }
+  } catch(e){
+    console.error('Auth error:',e)
+    document.getElementById('pw-error').style.display='block'
+    const btn=document.querySelector('#page-login .btn-primary')
+    if(btn){btn.innerHTML='<i class="ti ti-login"></i> ログイン';btn.disabled=false}
+  }
+}
+
+// ===== PAGES =====
+function switchTeacherPage(name){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'))
+  document.getElementById('nav-'+name)?.classList.add('active')
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.getElementById('page-'+name)?.classList.add('active')
+  document.getElementById('main-content').scrollTop=0
+  if(name==='dashboard') renderMobileDash()
+  if(name==='requests') renderMobileRequests()
+  if(name==='notices') renderMobileNoticesSent()
+  if(name==='students') renderMobileStudents()
+}
+
+// ===== DASHBOARD =====
+function renderMobileDash(){
+  const total=students.length
+  const x3=students.filter(s=>s.course===3||s.day==='金'||s.day==='日').length
+  const x2=students.filter(s=>s.course===2&&s.day!=='金'&&s.day!=='日').length
+  const reqCount=requests.length
+  document.getElementById('stat-grid').innerHTML=`
+    <div class="stat"><div class="stat-label"><i class="ti ti-users"></i> 生徒数</div><div class="stat-val">${total}</div></div>
+    <div class="stat"><div class="stat-label"><i class="ti ti-calendar-repeat"></i> 月3回</div><div class="stat-val">${x3}</div></div>
+    <div class="stat"><div class="stat-label"><i class="ti ti-calendar"></i> 月2回</div><div class="stat-val">${x2}</div></div>
+    <div class="stat"><div class="stat-label"><i class="ti ti-bell"></i> 振替相談</div><div class="stat-val" style="color:var(--red)">${reqCount}</div></div>`
+
+  const query=(document.getElementById('dash-search')?.value||'').toLowerCase()
+  const DAY_ORDER={木:0,金:1,土:2,日:3}
+  let list=[...students].sort((a,b)=>DAY_ORDER[a.day]-DAY_ORDER[b.day]||a.time.localeCompare(b.time))
+  if(query) list=list.filter(s=>s.name.toLowerCase().includes(query)||(s.kana&&s.kana.toLowerCase().includes(query)))
+
+  if(!list.length){document.getElementById('dash-list').innerHTML='<div style="color:var(--text3);font-size:14px;padding:20px 0;text-align:center">生徒が見つかりません</div>';return}
+
+  document.getElementById('dash-list').innerHTML=list.map((s,i)=>{
+    const [bg,fg]=AVATAR_COLORS[students.indexOf(s)%AVATAR_COLORS.length]
+    const hasReq=(s.requests||[]).length>0
+    const selDone=s.day==='土'&&s.course===2?s.selected.length>=2:true
+    const absCnt=approvedAbsences.filter(a=>a.studentId===s.id&&a.month===selectedMonth).length
+    return `<div class="student-row">
+      <div class="student-avatar" style="background:${bg};color:${fg}">${initials(s.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="student-name">${s.name}${hasReq?'<span style="margin-left:6px;font-size:10px;background:var(--red);color:#fff;border-radius:4px;padding:1px 5px;font-weight:600">申請</span>':''}</div>
+        <div class="student-info">${s.day}曜 ${s.time} / 月${s.course}回</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        ${absCnt?`<div class="badge b-red" style="font-size:10px;margin-bottom:3px">欠席${absCnt}回</div>`:''}
+        ${s.day==='土'&&s.course===2?`<div class="badge ${selDone?'b-green':'b-amber'}" style="font-size:10px">${selDone?'選択済':'未選択'}</div>`:`<div class="badge b-gray" style="font-size:10px">固定</div>`}
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ===== REQUESTS =====
+function renderMobileRequests(){
+  if(!requests.length){
+    document.getElementById('requests-list').innerHTML='<div style="text-align:center;color:var(--text3);font-size:14px;padding:28px">振替相談はありません</div>'
+    return
+  }
+  document.getElementById('requests-list').innerHTML=requests.map(r=>`
+    <div class="req-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:16px;font-weight:700">${r.student_name}</div>
+        <span class="badge b-amber">${r.type}</span>
+      </div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">${r.date}</div>
+      <div style="font-size:13px;color:var(--amber);margin-bottom:12px">「${r.note}」</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" style="flex:1;background:var(--green);border-color:var(--green)" onclick="approveRequest('${r.id}','${r.student_id}')">
+          <i class="ti ti-check"></i> 承認
+        </button>
+        <button class="btn btn-sm btn-danger" style="flex:1" onclick="rejectRequest('${r.id}','${r.student_id}')">
+          <i class="ti ti-x"></i> 却下
+        </button>
+      </div>
+    </div>`).join('')
+}
+
+async function approveRequest(id, studentId){
+  const r=requests.find(x=>x.id===id); if(!r) return
+  if(sb) await sb.from('requests').update({status:'approved'}).eq('id',id)
+  requests=requests.filter(x=>x.id!==id)
+  const s=students.find(x=>x.id===studentId)
+  if(s){s.requests=s.requests.filter(x=>x.id!==id)}
+  approvedAbsences.push({id,studentId,date:r.date,day:r.day||s?.day||'',time:r.time||s?.time||'',type:r.type,note:r.note,month:selectedMonth})
+  toast('承認しました')
+  updateBadges()
+  renderMobileRequests()
+}
+async function rejectRequest(id, studentId){
+  if(sb) await sb.from('requests').delete().eq('id',id)
+  requests=requests.filter(x=>x.id!==id)
+  const s=students.find(x=>x.id===studentId)
+  if(s) s.requests=s.requests.filter(x=>x.id!==id)
+  toast('却下しました')
+  updateBadges()
+  renderMobileRequests()
+}
+
+// ===== NOTICES =====
+function renderMobileNoticeStudentList(){
+  const el=document.getElementById('notice-student-list'); if(!el) return
+  const DAY_ORDER={木:0,金:1,土:2,日:3}
+  const list=[...students].sort((a,b)=>DAY_ORDER[a.day]-DAY_ORDER[b.day]||a.time.localeCompare(b.time))
+  el.innerHTML=list.map(s=>`
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer">
+      <input type="checkbox" class="notice-cb" value="${s.id}" data-name="${s.name}" checked style="width:20px;height:20px;cursor:pointer">
+      <span style="font-size:14px;font-weight:600">${s.name}</span>
+      <span style="font-size:12px;color:var(--text2);margin-left:auto">${s.day}曜 ${s.time}</span>
+    </label>`).join('')
+  updateNoticeCount()
+}
+function selectAllStudents(checked){
+  document.querySelectorAll('.notice-cb').forEach(cb=>cb.checked=checked)
+  updateNoticeCount()
+}
+function updateNoticeCount(){
+  const total=document.querySelectorAll('.notice-cb').length
+  const sel=document.querySelectorAll('.notice-cb:checked').length
+  document.getElementById('notice-count').textContent=`${sel} / ${total} 名選択中`
+}
+
+document.getElementById('notice-file-input')?.addEventListener('change',function(){
+  const newFiles=Array.from(this.files||[])
+  newFiles.forEach(f=>{
+    const valid=f.name.toLowerCase().endsWith('.pdf')||f.name.toLowerCase().endsWith('.mp3')
+    if(!valid){toast(f.name+'はPDF/mp3のみ対応',true);return}
+    if(f.size>20*1024*1024){toast(f.name+'は20MB超えです',true);return}
+    if(!noticeSelectedFiles.find(x=>x.name===f.name)) noticeSelectedFiles.push(f)
+  })
+  renderNoticeFilePreview()
+})
+function renderNoticeFilePreview(){
+  const el=document.getElementById('notice-file-preview'); if(!el) return
+  if(!noticeSelectedFiles.length){el.innerHTML='';return}
+  el.innerHTML=noticeSelectedFiles.map((f,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:6px;margin-bottom:6px">
+      <i class="ti ${f.name.endsWith('.mp3')?'ti-music':'ti-file-type-pdf'}" style="color:var(--blue);font-size:18px"></i>
+      <span style="flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+      <button onclick="removeNoticeFile(${i})" style="background:none;border:none;color:var(--red);font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+    </div>`).join('')
+}
+function removeNoticeFile(i){noticeSelectedFiles.splice(i,1);renderNoticeFilePreview()}
+
+async function uploadNoticeFiles(noticeId){
+  const uploaded=[]
+  for(const file of noticeSelectedFiles){
+    const path=noticeId+'/'+Date.now()+'_'+file.name
+    const{error}=await sb.storage.from('notice-files').upload(path,file)
+    if(error){toast(file.name+'のアップロードに失敗しました',true);continue}
+    const{data:urlData}=sb.storage.from('notice-files').getPublicUrl(path)
+    uploaded.push({name:file.name,path,url:urlData.publicUrl,size:file.size})
+  }
+  return uploaded
+}
+
+async function sendMobileNotice(){
+  const title=document.getElementById('notice-title').value.trim()
+  const body=document.getElementById('notice-body').value.trim()
+  if(!title||!body){toast('タイトルと本文を入力してください',true);return}
+  const cbs=document.querySelectorAll('.notice-cb:checked')
+  if(!cbs.length){toast('送信先を選択してください',true);return}
+  const targetIds=Array.from(cbs).map(c=>c.value)
+  const targetNames=Array.from(cbs).map(c=>c.dataset.name)
+  const expiresAt=new Date(Date.now()+14*24*60*60*1000).toISOString()
+  const notice={title,body,month:selectedMonth,target_ids:targetIds,target_names:targetNames,confirmed_by:[],comments:[],files:[],expires_at:expiresAt}
+  if(sb){
+    const{data,error}=await sb.from('notices').insert([notice]).select().single()
+    if(error){toast('送信に失敗しました',true);return}
+    if(data) notice.id=data.id
+    if(noticeSelectedFiles.length){
+      toast('ファイルをアップロード中...')
+      const files=await uploadNoticeFiles(notice.id)
+      notice.files=files
+      await sb.from('notices').update({files}).eq('id',notice.id)
+      const{data:fresh}=await sb.from('notices').select('*').eq('id',notice.id).single()
+      if(fresh) Object.assign(notice,fresh)
+    }
+  } else {
+    notice.id='n_'+Date.now()
+  }
+  notices.unshift(notice)
+  document.getElementById('notice-title').value=''
+  document.getElementById('notice-body').value=''
+  noticeSelectedFiles=[]
+  renderNoticeFilePreview()
+  toast(targetNames.length+'名にお知らせを送信しました')
+  renderMobileNoticesSent()
+  updateBadges()
+}
+
+function renderMobileNoticesSent(){
+  if(!notices.length){
+    document.getElementById('notices-sent-list').innerHTML='<div style="text-align:center;color:var(--text3);font-size:14px;padding:20px">まだお知らせはありません</div>'
+    return
+  }
+  document.getElementById('notices-sent-list').innerHTML=notices.map(n=>{
+    const unread=n.target_names?.filter(name=>{
+      const s=students.find(x=>x.name===name)
+      return s&&!(n.confirmed_by||[]).includes(s.id)
+    }).length||0
+    const unreplied=(n.comments||[]).filter(c=>!c.reply).length
+    const commentsHtml=(n.comments||[]).map(c=>{
+      const s=students.find(x=>x.id===c.student_id)
+      return `<div class="notice-reply-box" style="margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">${s?.name||'生徒'}</div>
+        <div style="font-size:13px">${c.text}</div>
+        ${c.reply
+          ?`<div style="margin-top:6px;padding:8px;background:var(--blue-light);border-radius:6px;font-size:13px"><span style="font-weight:700;color:var(--blue-dark)">返信：</span>${c.reply}</div>`
+          :`<div style="display:flex;gap:6px;margin-top:8px">
+              <input id="reply-${n.id}-${c.student_id}" placeholder="返信を入力..." style="flex:1;font-size:13px;padding:8px 10px">
+              <button class="btn btn-sm btn-primary" onclick="sendReplyMobile('${n.id}','${c.student_id}')">返信</button>
+            </div>`
+        }
+      </div>`
+    }).join('')
+    const filesHtml=(n.files&&n.files.length)?n.files.map(f=>`
+      <a href="${f.url}" target="_blank" class="file-link">
+        <i class="ti ${f.name.endsWith('.mp3')?'ti-music':'ti-file-type-pdf'}"></i>
+        <span style="flex:1;font-size:13px;font-weight:600">${f.name}</span>
+        <i class="ti ti-external-link" style="font-size:14px"></i>
+      </a>`).join(''):''
+
+    return `<div class="notice-item">
+      <div class="notice-item-title">${n.title}</div>
+      <div class="notice-item-meta">
+        ${n.target_names?.length}名に送信
+        ${unread>0?`<span class="badge b-amber" style="margin-left:6px">${unread}名未確認</span>`:'<span class="badge b-green" style="margin-left:6px">全員確認済み</span>'}
+        ${unreplied>0?`<span class="badge b-red" style="margin-left:4px">${unreplied}件未返信</span>`:''}
+      </div>
+      ${filesHtml}
+      ${commentsHtml}
+      <button class="btn btn-sm" style="color:var(--red);border-color:#F7C1C1;font-size:12px;margin-top:6px" onclick="deleteMobileNotice('${n.id}')">
+        <i class="ti ti-trash"></i> 削除
+      </button>
+    </div>`
+  }).join('')
+}
+
+async function sendReplyMobile(noticeId, studentId){
+  const input=document.getElementById(`reply-${noticeId}-${studentId}`)
+  const text=input?.value.trim(); if(!text) return
+  const n=notices.find(x=>x.id===noticeId); if(!n) return
+  const c=n.comments.find(x=>x.student_id===studentId); if(!c) return
+  c.reply=text
+  if(sb) await sb.from('notices').update({comments:n.comments}).eq('id',noticeId)
+  toast('返信しました')
+  updateBadges()
+  renderMobileNoticesSent()
+}
+async function deleteMobileNotice(id){
+  if(!confirm('このお知らせを削除しますか？')) return
+  notices=notices.filter(n=>n.id!==id)
+  if(sb) await sb.from('notices').delete().eq('id',id)
+  toast('削除しました')
+  renderMobileNoticesSent()
+}
+
+// ===== STUDENTS =====
+function renderMobileStudents(){
+  const query=(document.getElementById('student-search')?.value||'').toLowerCase()
+  const DAY_ORDER={木:0,金:1,土:2,日:3}
+  let list=[...students].sort((a,b)=>DAY_ORDER[a.day]-DAY_ORDER[b.day]||a.time.localeCompare(b.time))
+  if(query) list=list.filter(s=>s.name.toLowerCase().includes(query)||(s.kana&&s.kana.toLowerCase().includes(query)))
+  if(!list.length){document.getElementById('students-list').innerHTML='<div style="color:var(--text3);font-size:14px;padding:20px 0;text-align:center">生徒が見つかりません</div>';return}
+  document.getElementById('students-list').innerHTML=list.map((s,i)=>{
+    const [bg,fg]=AVATAR_COLORS[students.indexOf(s)%AVATAR_COLORS.length]
+    return `<div class="student-row">
+      <div class="student-avatar" style="background:${bg};color:${fg}">${initials(s.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="student-name">${s.name}</div>
+        <div class="student-info">${s.kana||''}</div>
+        <div class="student-info">${s.day}曜日 ${s.time} / 月${s.course}回</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;color:var(--text2)">${s.tel||''}</div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+// ===== INIT =====
+// notice-file-input イベントは DOM ロード後に付与
+window.addEventListener('DOMContentLoaded',()=>{
+  const fileInput=document.getElementById('notice-file-input')
+  if(fileInput){
+    fileInput.addEventListener('change',function(){
+      const newFiles=Array.from(this.files||[])
+      newFiles.forEach(f=>{
+        const valid=f.name.toLowerCase().endsWith('.pdf')||f.name.toLowerCase().endsWith('.mp3')
+        if(!valid){toast(f.name+'はPDF/mp3のみ対応',true);return}
+        if(f.size>20*1024*1024){toast(f.name+'は20MB超えです',true);return}
+        if(!noticeSelectedFiles.find(x=>x.name===f.name)) noticeSelectedFiles.push(f)
+      })
+      renderNoticeFilePreview()
+    })
+  }
+})
+</script>
+</body>
+</html>
