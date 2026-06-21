@@ -486,9 +486,34 @@
         </div>
       </div>
 
+      <!-- Links -->
+      <div class="form-card">
+        <p class="form-section-title">② リンク設定 <span class="label-hint">（すべて省略可）</span></p>
+        <div class="field">
+          <label>🛒 ステム購入リンク</label>
+          <input type="url" id="f-purchase" placeholder="https://booth.pm/..." />
+        </div>
+        <div class="field">
+          <label>🎵 楽曲配信リンク</label>
+          <input type="url" id="f-streaming" placeholder="https://open.spotify.com/..." />
+        </div>
+        <div class="field">
+          <label>▶ YouTube</label>
+          <input type="url" id="f-youtube" placeholder="https://youtube.com/..." />
+        </div>
+        <div class="field">
+          <label>📷 Instagram</label>
+          <input type="url" id="f-instagram" placeholder="https://instagram.com/..." />
+        </div>
+        <div class="field">
+          <label>𝕏 X (Twitter)</label>
+          <input type="url" id="f-twitter" placeholder="https://x.com/..." />
+        </div>
+      </div>
+
       <!-- Step 2: Stems -->
       <div class="form-card">
-        <p class="form-section-title">② ステムファイルをアップロード</p>
+        <p class="form-section-title">③ ステムファイルをアップロード</p>
         <p style="font-size:13px;color:var(--text-muted);line-height:1.7;">
           MP3・WAV・OGG ファイルを選択してください。ファイル名がそのままステム名になります（後で変更可）。
           アップロードすると GitHub の <code id="stems-dir-label">stems/</code> ディレクトリに保存されます。
@@ -502,7 +527,7 @@
 
       <!-- Step 3: Stem names -->
       <div class="form-card" id="stems-form-card" style="display:none;">
-        <p class="form-section-title">③ ステム名を確認・編集</p>
+        <p class="form-section-title">④ ステム名を確認・編集</p>
         <p style="font-size:13px;color:var(--text-muted);">アップロード後のファイルパスと表示名を確認してください。</p>
         <div class="stems-list" id="stems-list"></div>
         <button class="add-stem-btn" id="add-stem-btn">＋ ステムを手動追加（既存ファイルのパスを入力）</button>
@@ -699,6 +724,11 @@ function openAddPage() {
   document.getElementById('f-title').value   = '';
   document.getElementById('f-artist').value  = '';
   document.getElementById('f-artwork').value = '';
+  document.getElementById('f-purchase').value  = '';
+  document.getElementById('f-streaming').value = '';
+  document.getElementById('f-youtube').value   = '';
+  document.getElementById('f-instagram').value = '';
+  document.getElementById('f-twitter').value   = '';
   document.getElementById('upload-file-list').innerHTML = '';
   document.getElementById('stems-list').innerHTML = '';
   document.getElementById('stems-form-card').style.display = 'none';
@@ -714,6 +744,12 @@ function openEditPage(idx) {
   document.getElementById('f-title').value   = s.title  || '';
   document.getElementById('f-artist').value  = s.artist || '';
   document.getElementById('f-artwork').value = s.artwork || '';
+  const lnk = s.links || {};
+  document.getElementById('f-purchase').value  = lnk.purchase  || '';
+  document.getElementById('f-streaming').value = lnk.streaming || '';
+  document.getElementById('f-youtube').value   = lnk.youtube   || '';
+  document.getElementById('f-instagram').value = lnk.instagram || '';
+  document.getElementById('f-twitter').value   = lnk.twitter   || '';
   document.getElementById('upload-file-list').innerHTML = '';
   document.getElementById('delete-btn').style.display = '';
 
@@ -877,9 +913,21 @@ document.getElementById('save-btn').addEventListener('click', async () => {
       title,
       artist:  document.getElementById('f-artist').value.trim()  || undefined,
       artwork: document.getElementById('f-artwork').value.trim() || undefined,
+      links: {
+        purchase:  document.getElementById('f-purchase').value.trim()  || undefined,
+        streaming: document.getElementById('f-streaming').value.trim() || undefined,
+        youtube:   document.getElementById('f-youtube').value.trim()   || undefined,
+        instagram: document.getElementById('f-instagram').value.trim() || undefined,
+        twitter:   document.getElementById('f-twitter').value.trim()   || undefined,
+      },
       stems
     };
+    // undefinedキーを削除
     Object.keys(song).forEach(k => song[k] === undefined && delete song[k]);
+    if (song.links) {
+      Object.keys(song.links).forEach(k => song.links[k] === undefined && delete song.links[k]);
+      if (!Object.keys(song.links).length) delete song.links;
+    }
     if (editingIdx >= 0) songs[editingIdx] = song;
     else songs.push(song);
 
