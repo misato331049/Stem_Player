@@ -1,8 +1,9 @@
 [
   {
     "id": "song1",
-    "title": "パレード1",
-    "artist": "つちやみさと",
+    "title": "ãã¬ã¼ã1",
+    "artist": "ã¤ã¡ãã¿ãã¨",
+    "artwork": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
     "stems": [
       {
         "name": "Drums",
