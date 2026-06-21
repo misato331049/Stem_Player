@@ -429,6 +429,39 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* リンクボタン */
+    .player-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      padding: 0 32px 16px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 20px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      transition: opacity 0.15s, transform 0.1s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .link-btn:hover { opacity: 0.8; transform: translateY(-1px); }
+    .link-btn.purchase { border-color: var(--accent); color: var(--accent); background: rgba(124,109,250,0.1); }
+    .link-btn.streaming { border-color: #1db954; color: #1db954; background: rgba(29,185,84,0.08); }
+    .link-btn.youtube { border-color: #ff0000; color: #ff0000; background: rgba(255,0,0,0.08); }
+    .link-btn.instagram { border-color: #e1306c; color: #e1306c; background: rgba(225,48,108,0.08); }
+    .link-btn.twitter { border-color: #1da1f2; color: #1da1f2; background: rgba(29,161,242,0.08); }
+
     @media (max-width: 600px) {
       .song-grid { padding: 0 16px 60px; grid-template-columns: 1fr 1fr; }
       .list-hero { padding: 40px 20px 32px; }
@@ -437,6 +470,7 @@
       .track-vol { width: 60px; }
       .tracks-area { padding: 8px 12px 32px; }
       .player-header { padding: 14px 16px; }
+      .player-links { padding: 0 12px 12px; }
     }
   </style>
 </head>
@@ -498,6 +532,7 @@
   </div>
 
   <div class="tracks-area" id="tracks-area"></div>
+  <div class="player-links" id="player-links"></div>
 </div>
 
 <script>
@@ -605,6 +640,7 @@ async function openPlayer(songIdx) {
   document.getElementById('player-stem-count').textContent = `${tracks.length} stems`;
   buildPlayerUI();
   drawAllWaveforms();
+  renderPlayerLinks(song);
 
   pauseOffset = 0;
   isPlaying = false;
@@ -614,8 +650,30 @@ async function openPlayer(songIdx) {
 }
 
 /* ═══════════════════════════════════════
-   PLAYER UI
+   PLAYER LINKS
 ═══════════════════════════════════════ */
+function renderPlayerLinks(song) {
+  const area = document.getElementById('player-links');
+  area.innerHTML = '';
+  const links = song.links || {};
+  const defs = [
+    { key: 'purchase',   cls: 'purchase',   icon: '🛒', label: 'ステム購入' },
+    { key: 'streaming',  cls: 'streaming',  icon: '🎵', label: '配信で聴く' },
+    { key: 'youtube',    cls: 'youtube',    icon: '▶', label: 'YouTube' },
+    { key: 'instagram',  cls: 'instagram',  icon: '📷', label: 'Instagram' },
+    { key: 'twitter',    cls: 'twitter',    icon: '𝕏', label: 'X (Twitter)' },
+  ];
+  defs.forEach(d => {
+    if (!links[d.key]) return;
+    const a = document.createElement('a');
+    a.href = links[d.key];
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.className = `link-btn ${d.cls}`;
+    a.innerHTML = `<span>${d.icon}</span><span>${d.label}</span>`;
+    area.appendChild(a);
+  });
+}
 function buildPlayerUI() {
   document.getElementById('time-total').textContent = formatTime(duration);
   document.getElementById('seek-bar').value = 0;
