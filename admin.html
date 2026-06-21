@@ -481,8 +481,12 @@
           </div>
         </div>
         <div class="field">
-          <label>アートワーク URL <span class="label-hint">（省略可）</span></label>
-          <input type="url" id="f-artwork" placeholder="https://..." />
+          <label>アートワーク <span class="label-hint">（画像をアップロード または URL入力）</span></label>
+          <div class="upload-area" id="artwork-upload-area" style="padding:16px;">
+            <input type="file" id="artwork-file-input" accept="image/*" />
+            <p class="upload-label" id="artwork-upload-label">ここにドロップ、または <strong>クリックして選択</strong></p>
+          </div>
+          <input type="url" id="f-artwork" placeholder="または画像URL（https://...）" style="margin-top:8px;" />
         </div>
         <div class="field">
           <label>楽曲説明 <span class="label-hint">（省略可）</span></label>
@@ -555,6 +559,7 @@
 let songs = [];
 let editingIdx = -1; // -1 = new
 let pendingFiles = []; // { file, name, path, uploaded }
+let pendingArtwork = null; // { file, path }
 let ghConfig = {};
 
 /* ═══════════════════════════════════════
@@ -724,16 +729,18 @@ function renderSongTable() {
 function openAddPage() {
   editingIdx = -1;
   pendingFiles = [];
+  pendingArtwork = null;
   document.getElementById('form-page-title').textContent = '楽曲を追加';
   document.getElementById('f-title').value       = '';
   document.getElementById('f-artist').value      = '';
   document.getElementById('f-artwork').value     = '';
   document.getElementById('f-description').value = '';
-  document.getElementById('f-purchase').value  = '';
-  document.getElementById('f-streaming').value = '';
-  document.getElementById('f-youtube').value   = '';
-  document.getElementById('f-instagram').value = '';
-  document.getElementById('f-twitter').value   = '';
+  document.getElementById('f-purchase').value    = '';
+  document.getElementById('f-streaming').value   = '';
+  document.getElementById('f-youtube').value     = '';
+  document.getElementById('f-instagram').value   = '';
+  document.getElementById('f-twitter').value     = '';
+  document.getElementById('artwork-upload-label').textContent = 'ここにドロップ、または クリックして選択';
   document.getElementById('upload-file-list').innerHTML = '';
   document.getElementById('stems-list').innerHTML = '';
   document.getElementById('stems-form-card').style.display = 'none';
@@ -815,6 +822,33 @@ uploadArea.addEventListener('drop', e => {
   handleFiles([...e.dataTransfer.files].filter(f => f.type.startsWith('audio/')));
 });
 fileInput.addEventListener('change', () => handleFiles([...fileInput.files]));
+
+/* ── アートワーク画像アップロード ── */
+const artworkFileInput = document.getElementById('artwork-file-input');
+const artworkUploadArea = document.getElementById('artwork-upload-area');
+
+artworkUploadArea.addEventListener('dragover', e => { e.preventDefault(); artworkUploadArea.classList.add('drag-over'); });
+artworkUploadArea.addEventListener('dragleave', () => artworkUploadArea.classList.remove('drag-over'));
+artworkUploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  artworkUploadArea.classList.remove('drag-over');
+  const f = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+  if (f) handleArtworkFile(f);
+});
+artworkFileInput.addEventListener('change', () => {
+  if (artworkFileInput.files[0]) handleArtworkFile(artworkFileInput.files[0]);
+});
+
+function handleArtworkFile(file) {
+  const title = (document.getElementById('f-title').value.trim() || 'untitled')
+    .toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const ext  = file.name.split('.').pop();
+  const path = `stems/${title}/artwork.${ext}`;
+  pendingArtwork = { file, path };
+  document.getElementById('artwork-upload-label').textContent = `✓ ${file.name} を選択中`;
+  // プレビューURLをf-artworkに仮セット（保存時に上書き）
+  document.getElementById('f-artwork').value = '';
+}
 
 function handleFiles(files) {
   files.forEach(f => {
@@ -911,6 +945,24 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     if (pendingFiles.some(p => !p.uploaded)) {
       await uploadFilesToGitHub();
       renderUploadList();
+    }
+
+    // アートワーク画像をアップロード
+    if (pendingArtwork) {
+      document.getElementById('loading-msg').textContent = 'ジャケット画像をアップロード中…';
+      const b64 = await fileToBase64(pendingArtwork.file);
+      let sha;
+      try {
+        const cur = await ghAPI(`/repos/${ghConfig.repo}/contents/${pendingArtwork.path}?ref=${ghConfig.branch||'main'}`, ghConfig.token);
+        sha = cur.sha;
+      } catch(e) { sha = undefined; }
+      const body = { message: `Add artwork: ${pendingArtwork.path}`, content: b64, branch: ghConfig.branch || 'main' };
+      if (sha) body.sha = sha;
+      const res = await ghAPIPut(`/repos/${ghConfig.repo}/contents/${encodeURIComponent(pendingArtwork.path).replace(/%2F/g,'/')}`, ghConfig.token, body);
+      // GitHub Contents APIのdownload_urlをartworkとしてセット（Privateリポジトリ対応）
+      const artworkUrl = `https://raw.githubusercontent.com/${ghConfig.repo}/${ghConfig.branch||'main'}/${pendingArtwork.path}`;
+      document.getElementById('f-artwork').value = artworkUrl;
+      pendingArtwork = null;
     }
 
     // songs配列を更新
