@@ -959,8 +959,16 @@ document.getElementById('save-btn').addEventListener('click', async () => {
       const body = { message: `Add artwork: ${pendingArtwork.path}`, content: b64, branch: ghConfig.branch || 'main' };
       if (sha) body.sha = sha;
       const res = await ghAPIPut(`/repos/${ghConfig.repo}/contents/${encodeURIComponent(pendingArtwork.path).replace(/%2F/g,'/')}`, ghConfig.token, body);
-      // GitHub Contents APIのdownload_urlをartworkとしてセット（Privateリポジトリ対応）
-      const artworkUrl = `https://raw.githubusercontent.com/${ghConfig.repo}/${ghConfig.branch||'main'}/${pendingArtwork.path}`;
+      // APIレスポンスのdownload_urlを使う（Publicリポジトリ）
+      // Privateリポジトリの場合はGitHub APIで取得したURLを使う
+      let artworkUrl = res?.content?.download_url || '';
+      if (!artworkUrl) {
+        // フォールバック：Contents APIで再取得
+        try {
+          const info = await ghAPI(`/repos/${ghConfig.repo}/contents/${pendingArtwork.path}?ref=${ghConfig.branch||'main'}`, ghConfig.token);
+          artworkUrl = info.download_url || '';
+        } catch(e) {}
+      }
       document.getElementById('f-artwork').value = artworkUrl;
       pendingArtwork = null;
     }
