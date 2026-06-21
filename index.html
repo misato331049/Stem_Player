@@ -205,7 +205,7 @@
       flex-direction: column;
       align-items: center;
       gap: 16px;
-      padding: 28px 32px 24px;
+      padding: 0 0 16px;
     }
     .seek-wrapper {
       width: 100%;
@@ -330,13 +330,61 @@
     /* Tracks */
     .tracks-area {
       flex: 1;
-      padding: 8px 32px 40px;
-      max-width: 900px;
-      width: 100%;
-      margin: 0 auto;
       display: flex;
       flex-direction: column;
       gap: 6px;
+    }
+
+    /* 2カラムレイアウト */
+    .player-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
+      padding: 16px 32px 40px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      align-items: start;
+    }
+    .player-left { display: flex; flex-direction: column; gap: 6px; }
+    .player-right {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 24px;
+    }
+
+    /* ジャケット */
+    .song-jacket {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(124,109,250,0.15), rgba(192,132,252,0.15));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .song-jacket img { width: 100%; height: 100%; object-fit: cover; }
+    .song-jacket-placeholder svg { width: 48px; height: 48px; fill: var(--accent); opacity: 0.4; }
+
+    /* 楽曲説明 */
+    .song-description {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    /* リンクボタン（右カラム） */
+    .player-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
     .track-row {
       display: grid;
@@ -441,11 +489,12 @@
       margin: 0 auto;
     }
     .link-btn {
-      display: inline-flex;
+      display: flex;
       align-items: center;
+      justify-content: center;
       gap: 7px;
       border-radius: 20px;
-      padding: 7px 16px;
+      padding: 10px 16px;
       font-size: 13px;
       font-weight: 600;
       text-decoration: none;
@@ -462,15 +511,23 @@
     .link-btn.instagram { border-color: #e1306c; color: #e1306c; background: rgba(225,48,108,0.08); }
     .link-btn.twitter { border-color: #1da1f2; color: #1da1f2; background: rgba(29,161,242,0.08); }
 
+    @media (max-width: 768px) {
+      .player-body { grid-template-columns: 1fr; padding: 12px 16px 40px; }
+      .player-right { position: static; flex-direction: row; flex-wrap: wrap; }
+      .song-jacket { width: 140px; aspect-ratio: 1; flex-shrink: 0; }
+      .song-description { font-size: 12px; }
+      .player-links { flex-direction: row; flex-wrap: wrap; }
+      .link-btn { padding: 7px 14px; font-size: 12px; }
+    }
     @media (max-width: 600px) {
       .song-grid { padding: 0 16px 60px; grid-template-columns: 1fr 1fr; }
       .list-hero { padding: 40px 20px 32px; }
       .track-row { grid-template-columns: 90px 1fr; grid-template-rows: auto auto; height: auto; gap: 8px; }
       .track-wave { grid-column: 1 / -1; height: 28px; }
       .track-vol { width: 60px; }
-      .tracks-area { padding: 8px 12px 32px; }
       .player-header { padding: 14px 16px; }
-      .player-links { padding: 0 12px 12px; }
+      .player-right { flex-direction: column; }
+      .song-jacket { width: 100%; }
     }
   </style>
 </head>
@@ -512,27 +569,41 @@
     <button class="back-btn" id="back-btn">← 一覧に戻る</button>
   </header>
 
-  <div class="transport">
-    <div class="seek-wrapper">
-      <span class="time-label" id="time-current">0:00</span>
-      <input type="range" class="seek-bar" id="seek-bar" min="0" max="1000" value="0" step="1" />
-      <span class="time-label" id="time-total">0:00</span>
+  <div class="player-body">
+    <!-- 左：トランスポート + ステムトラック -->
+    <div class="player-left">
+      <div class="transport">
+        <div class="seek-wrapper">
+          <span class="time-label" id="time-current">0:00</span>
+          <input type="range" class="seek-bar" id="seek-bar" min="0" max="1000" value="0" step="1" />
+          <span class="time-label" id="time-total">0:00</span>
+        </div>
+        <div class="transport-btns">
+          <button class="ctrl-btn" id="all-on-btn">ALL ON</button>
+          <button class="ctrl-btn" id="all-off-btn">ALL OFF</button>
+          <button class="play-btn" id="play-btn">▶</button>
+          <button class="ctrl-btn" id="loop-btn">LOOP</button>
+        </div>
+        <div class="master-vol-wrap">
+          <span class="master-vol-label">MASTER VOL</span>
+          <input type="range" class="master-vol-bar" id="master-vol" min="0" max="1" step="0.01" value="1" />
+          <span class="master-vol-val" id="master-vol-val">100%</span>
+        </div>
+      </div>
+      <div class="tracks-area" id="tracks-area"></div>
     </div>
-    <div class="transport-btns">
-      <button class="ctrl-btn" id="all-on-btn">ALL ON</button>
-      <button class="ctrl-btn" id="all-off-btn">ALL OFF</button>
-      <button class="play-btn" id="play-btn">▶</button>
-      <button class="ctrl-btn" id="loop-btn">LOOP</button>
-    </div>
-    <div class="master-vol-wrap">
-      <span class="master-vol-label">MASTER VOL</span>
-      <input type="range" class="master-vol-bar" id="master-vol" min="0" max="1" step="0.01" value="1" />
-      <span class="master-vol-val" id="master-vol-val">100%</span>
+
+    <!-- 右：ジャケット・説明・リンク -->
+    <div class="player-right">
+      <div class="song-jacket" id="song-jacket">
+        <div class="song-jacket-placeholder">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+        </div>
+      </div>
+      <div class="song-description" id="song-description" style="display:none;"></div>
+      <div class="player-links" id="player-links"></div>
     </div>
   </div>
-
-  <div class="tracks-area" id="tracks-area"></div>
-  <div class="player-links" id="player-links"></div>
 </div>
 
 <script>
@@ -650,9 +721,27 @@ async function openPlayer(songIdx) {
 }
 
 /* ═══════════════════════════════════════
-   PLAYER LINKS
+   PLAYER LINKS + JACKET + DESCRIPTION
 ═══════════════════════════════════════ */
 function renderPlayerLinks(song) {
+  // ジャケット
+  const jacket = document.getElementById('song-jacket');
+  if (song.artwork) {
+    jacket.innerHTML = `<img src="${song.artwork}" alt="${song.title}" />`;
+  } else {
+    jacket.innerHTML = `<div class="song-jacket-placeholder"><svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>`;
+  }
+
+  // 楽曲説明
+  const desc = document.getElementById('song-description');
+  if (song.description) {
+    desc.textContent = song.description;
+    desc.style.display = '';
+  } else {
+    desc.style.display = 'none';
+  }
+
+  // リンクボタン
   const area = document.getElementById('player-links');
   area.innerHTML = '';
   const links = song.links || {};
