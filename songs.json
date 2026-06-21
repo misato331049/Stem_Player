@@ -3,7 +3,7 @@
     "id": "song1",
     "title": "Rock",
     "artist": "みさと",
-    "artwork": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+    "artwork": "https://raw.githubusercontent.com/misato331049/Stem_Player/main/stems/rock/artwork.png",
     "description": "この曲は非常にロックです。\nロックすぎて笑えてきます。なんだこれは。ちょーウケるんですけど。",
     "links": {
       "purchase": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
