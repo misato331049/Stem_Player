@@ -4,6 +4,9 @@
     "title": "Rock",
     "artist": "みさと",
     "artwork": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1",
+    "links": {
+      "youtube": "https://www.youtube.com/watch?v=EY4_wcu7iI0&list=RDEY4_wcu7iI0&start_radio=1"
+    },
     "stems": [
       {
         "name": "Drums",
