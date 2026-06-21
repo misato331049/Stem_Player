@@ -484,6 +484,10 @@
           <label>アートワーク URL <span class="label-hint">（省略可）</span></label>
           <input type="url" id="f-artwork" placeholder="https://..." />
         </div>
+        <div class="field">
+          <label>楽曲説明 <span class="label-hint">（省略可）</span></label>
+          <textarea id="f-description" placeholder="楽曲についての説明、制作背景など…" style="min-height:100px;"></textarea>
+        </div>
       </div>
 
       <!-- Links -->
@@ -721,9 +725,10 @@ function openAddPage() {
   editingIdx = -1;
   pendingFiles = [];
   document.getElementById('form-page-title').textContent = '楽曲を追加';
-  document.getElementById('f-title').value   = '';
-  document.getElementById('f-artist').value  = '';
-  document.getElementById('f-artwork').value = '';
+  document.getElementById('f-title').value       = '';
+  document.getElementById('f-artist').value      = '';
+  document.getElementById('f-artwork').value     = '';
+  document.getElementById('f-description').value = '';
   document.getElementById('f-purchase').value  = '';
   document.getElementById('f-streaming').value = '';
   document.getElementById('f-youtube').value   = '';
@@ -741,9 +746,10 @@ function openEditPage(idx) {
   const s = songs[idx];
   pendingFiles = [];
   document.getElementById('form-page-title').textContent = '楽曲を編集';
-  document.getElementById('f-title').value   = s.title  || '';
-  document.getElementById('f-artist').value  = s.artist || '';
-  document.getElementById('f-artwork').value = s.artwork || '';
+  document.getElementById('f-title').value       = s.title       || '';
+  document.getElementById('f-artist').value      = s.artist      || '';
+  document.getElementById('f-artwork').value     = s.artwork     || '';
+  document.getElementById('f-description').value = s.description || '';
   const lnk = s.links || {};
   document.getElementById('f-purchase').value  = lnk.purchase  || '';
   document.getElementById('f-streaming').value = lnk.streaming || '';
@@ -911,8 +917,9 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     const song = {
       id: editingIdx >= 0 ? songs[editingIdx].id : Date.now().toString(36),
       title,
-      artist:  document.getElementById('f-artist').value.trim()  || undefined,
-      artwork: document.getElementById('f-artwork').value.trim() || undefined,
+      artist:      document.getElementById('f-artist').value.trim()      || undefined,
+      artwork:     document.getElementById('f-artwork').value.trim()     || undefined,
+      description: document.getElementById('f-description').value.trim() || undefined,
       links: {
         purchase:  document.getElementById('f-purchase').value.trim()  || undefined,
         streaming: document.getElementById('f-streaming').value.trim() || undefined,
