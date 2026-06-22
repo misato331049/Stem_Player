@@ -90,5 +90,45 @@
         "file": "stems/untitled/7 Other.mp3"
       }
     ]
+  },
+  {
+    "id": "mqpd29s2",
+    "title": "The Cello’s Grand Entrance Stems",
+    "artist": "つちやみさと",
+    "artwork": "https://raw.githubusercontent.com/misato331049/Stem_Player/main/stems/untitled/artwork.png",
+    "description": "この曲もあれですよ、そう、あれ、わかるだろ？",
+    "links": {
+      "purchase": "https://www.instagram.com/tsuchiya_qyoto/",
+      "streaming": "https://www.instagram.com/tsuchiya_qyoto/",
+      "youtube": "https://www.instagram.com/tsuchiya_qyoto/",
+      "instagram": "https://www.instagram.com/tsuchiya_qyoto/",
+      "twitter": "https://www.instagram.com/tsuchiya_qyoto/"
+    },
+    "stems": [
+      {
+        "name": "0 Drums",
+        "file": "stems/untitled/0 Drums.mp3"
+      },
+      {
+        "name": "1 Bass",
+        "file": "stems/untitled/1 Bass.mp3"
+      },
+      {
+        "name": "2 Keyboard",
+        "file": "stems/untitled/2 Keyboard.mp3"
+      },
+      {
+        "name": "3 Strings",
+        "file": "stems/untitled/3 Strings.mp3"
+      },
+      {
+        "name": "4 Synth",
+        "file": "stems/untitled/4 Synth.mp3"
+      },
+      {
+        "name": "5 Woodwinds",
+        "file": "stems/untitled/5 Woodwinds.mp3"
+      }
+    ]
   }
 ]
