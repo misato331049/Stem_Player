@@ -1,8 +1,8 @@
 [
   {
     "id": "song1",
-    "title": "Rock",
-    "artist": "みさと",
+    "title": "Rock Parade",
+    "artist": "つちやみさと",
     "artwork": "https://raw.githubusercontent.com/misato331049/Stem_Player/main/stems/rock/artwork.png",
     "description": "この曲は非常にロックです。\nロックすぎて笑えてきます。なんだこれは。ちょーウケるんですけど。",
     "links": {
