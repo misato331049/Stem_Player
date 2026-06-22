@@ -42,5 +42,53 @@
         "file": "stems/song1/6 Woodwinds.mp3"
       }
     ]
+  },
+  {
+    "id": "mqpcllh5",
+    "title": "Shadows of the Soul Stems",
+    "artist": "つちやみさと",
+    "artwork": "https://raw.githubusercontent.com/misato331049/Stem_Player/main/stems/shadows-of-the-soul-stems/artwork.png",
+    "description": "この曲はあれですね。そうあれです。あれですよ。",
+    "links": {
+      "purchase": "https://www.instagram.com/tsuchiya_qyoto/",
+      "streaming": "https://www.instagram.com/tsuchiya_qyoto/",
+      "youtube": "https://www.instagram.com/tsuchiya_qyoto/",
+      "instagram": "https://www.instagram.com/tsuchiya_qyoto/",
+      "twitter": "https://www.instagram.com/tsuchiya_qyoto/"
+    },
+    "stems": [
+      {
+        "name": "0 Lead Vocals",
+        "file": "stems/untitled/0 Lead Vocals.mp3"
+      },
+      {
+        "name": "1 Backing Vocals",
+        "file": "stems/untitled/1 Backing Vocals.mp3"
+      },
+      {
+        "name": "2 Drums",
+        "file": "stems/untitled/2 Drums.mp3"
+      },
+      {
+        "name": "3 Bass",
+        "file": "stems/untitled/3 Bass.mp3"
+      },
+      {
+        "name": "4 Guitar",
+        "file": "stems/untitled/4 Guitar.mp3"
+      },
+      {
+        "name": "5 Keyboard",
+        "file": "stems/untitled/5 Keyboard.mp3"
+      },
+      {
+        "name": "6 Synth",
+        "file": "stems/untitled/6 Synth.mp3"
+      },
+      {
+        "name": "7 Other",
+        "file": "stems/untitled/7 Other.mp3"
+      }
+    ]
   }
 ]
