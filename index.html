@@ -32,7 +32,19 @@
     .screen.active { display: flex; }
 
     /* ── LIST SCREEN ── */
-    #list-screen { align-items: center; background: linear-gradient(180deg, #1a3a2a 0%, #121212 360px); }
+    #list-screen {
+      align-items: center;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(29,185,84,0.45) 0%, transparent 70%),
+        linear-gradient(180deg, #0d2818 0%, #121212 500px);
+    }
+
+    /* ── PLAYER SCREEN ── */
+    #player-screen {
+      background:
+        radial-gradient(ellipse 60% 40% at 50% 0%, rgba(29,185,84,0.3) 0%, transparent 60%),
+        #121212;
+    }
 
     .list-header {
       width: 100%;
