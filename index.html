@@ -478,6 +478,7 @@
 <div id="list-screen" class="screen">
   <header class="list-header">
     <p class="site-logo">Stem Player</p>
+    <button class="back-btn" id="list-back-btn" style="margin-left:auto;">← トップに戻る</button>
   </header>
   <div class="list-hero">
     <h1>Listen in Layers.</h1>
@@ -495,7 +496,10 @@
       <p class="player-song-title" id="player-song-title">—</p>
       <p class="player-stem-count" id="player-stem-count"></p>
     </div>
-    <button class="back-btn" id="back-btn">← 一覧に戻る</button>
+    <div style="display:flex;gap:8px;">
+      <button class="back-btn" id="back-btn">← 一覧に戻る</button>
+      <button class="back-btn" id="player-top-btn">⌂ トップ</button>
+    </div>
   </header>
 
   <div class="player-body">
@@ -559,6 +563,14 @@ let soloActive = false;
 /* ── TOP SCREEN ── */
 document.getElementById('top-go-btn').addEventListener('click', () => {
   showScreen('list-screen');
+});
+document.getElementById('list-back-btn').addEventListener('click', () => {
+  showScreen('top-screen');
+});
+document.getElementById('player-top-btn').addEventListener('click', () => {
+  stopPlayback();
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  showScreen('top-screen');
 });
 
 /* ═══════════════════════════════════════
