@@ -130,5 +130,45 @@
         "file": "stems/untitled/5 Woodwinds.mp3"
       }
     ]
+  },
+  {
+    "id": "mqq14vzq",
+    "title": "Paper Koto Reactor Stems",
+    "artist": "つちやみさと",
+    "artwork": "https://raw.githubusercontent.com/misato331049/Stem_Player/main/stems/paper-koto-reactor-stems/artwork.png",
+    "description": "もうテストなので特に書くことないので何も書かないです。",
+    "links": {
+      "purchase": "https://youtu.be/cC6a3_C4oqk?si=t0sV7w-6HOhNr8hS",
+      "streaming": "https://youtu.be/cC6a3_C4oqk?si=t0sV7w-6HOhNr8hS",
+      "youtube": "https://youtu.be/cC6a3_C4oqk?si=t0sV7w-6HOhNr8hS",
+      "instagram": "https://youtu.be/cC6a3_C4oqk?si=t0sV7w-6HOhNr8hS",
+      "twitter": "https://youtu.be/cC6a3_C4oqk?si=t0sV7w-6HOhNr8hS"
+    },
+    "stems": [
+      {
+        "name": "0 Lead Vocals",
+        "file": "stems/untitled/0 Lead Vocals.mp3"
+      },
+      {
+        "name": "1 Drums",
+        "file": "stems/untitled/1 Drums.mp3"
+      },
+      {
+        "name": "2 Bass",
+        "file": "stems/untitled/2 Bass.mp3"
+      },
+      {
+        "name": "3 Guitar",
+        "file": "stems/untitled/3 Guitar.mp3"
+      },
+      {
+        "name": "4 Synth",
+        "file": "stems/untitled/4 Synth.mp3"
+      },
+      {
+        "name": "5 Other",
+        "file": "stems/untitled/5 Other.mp3"
+      }
+    ]
   }
 ]
