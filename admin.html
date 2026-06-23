@@ -760,21 +760,65 @@ async function loadSongs() {
 }
 
 /* ═══════════════════════════════════════
-   SAVE SONGS — ダウンロード方式
-   songs.json をブラウザにダウンロードし
-   GitHubに手動アップロードしてもらう
+   SAVE SONGS — GitHub API直接書き込み
 ═══════════════════════════════════════ */
-function saveSongs() {
+async function saveSongs() {
+  if (!ghConfig.token || !ghConfig.repo) {
+    showToast('先に GitHub の設定を行ってください', 'error');
+    return false;
+  }
+
+  const branch  = ghConfig.branch || 'main';
   const jsonStr = JSON.stringify(songs, null, 2);
-  const blob    = new Blob([jsonStr], { type: 'application/json' });
-  const url     = URL.createObjectURL(blob);
-  const a       = document.createElement('a');
-  a.href        = url;
-  a.download    = 'songs.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+
+  // UTF-8 → Base64（日本語対応）
+  const bytes   = new TextEncoder().encode(jsonStr);
+  let binary    = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  const content = btoa(binary);
+
+  // 最新SHAを取得（毎回新規取得でキャッシュなし）
+  let sha;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${ghConfig.repo}/contents/songs.json?ref=${branch}&_=${Date.now()}`,
+      {
+        cache: 'no-store',
+        headers: {
+          Authorization: 'token ' + ghConfig.token,
+          Accept: 'application/vnd.github.v3+json',
+        }
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      sha = data.sha;
+    }
+  } catch(e) { /* 新規作成の場合はSHAなし */ }
+
+  // PUTで書き込み
+  const body = { message: 'Update songs.json', content, branch };
+  if (sha) body.sha = sha;
+
+  const putRes = await fetch(
+    `https://api.github.com/repos/${ghConfig.repo}/contents/songs.json`,
+    {
+      method: 'PUT',
+      cache: 'no-store',
+      headers: {
+        Authorization: 'token ' + ghConfig.token,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body)
+    }
+  );
+
+  if (!putRes.ok) {
+    const errText = await putRes.text();
+    throw new Error(`GitHub API ${putRes.status}: ${errText}`);
+  }
+
   return true;
 }
 
@@ -1078,27 +1122,13 @@ document.getElementById('save-btn').addEventListener('click', async () => {
     if (editingIdx >= 0) songs[editingIdx] = song;
     else songs.push(song);
 
-    // songs.json をダウンロード
-    document.getElementById('loading-msg').textContent = 'songs.json を生成中…';
-    saveSongs();
+    // songs.json をGitHubに直接保存
+    document.getElementById('loading-msg').textContent = 'songs.json を更新中…';
+    await saveSongs();
 
-    showToast('songs.json をダウンロードしました ✓', 'success');
+    showToast(editingIdx >= 0 ? '楽曲を更新しました ✓' : '楽曲を追加しました ✓', 'success');
     renderSongTable();
     showPage('songs-page');
-
-    // GitHubへのアップロード案内
-    setTimeout(() => {
-      alert(
-        '📁 songs.json をダウンロードしました。\n\n' +
-        '次の手順でGitHubに反映してください：\n' +
-        '① GitHub の Stem_Player リポジトリを開く\n' +
-        '② songs.json をクリック\n' +
-        '③ 鉛筆アイコン（編集）をクリック\n' +
-        '④ Cmd+A で全選択 → 削除\n' +
-        '⑤ ダウンロードした songs.json の内容を貼り付け\n' +
-        '⑥ Commit changes'
-      );
-    }, 500);
 
   } catch(e) {
     showToast('エラー: ' + e.message, 'error');
@@ -1117,12 +1147,19 @@ document.getElementById('delete-btn').addEventListener('click', () => {
 
 async function deleteSong(idx) {
   const song = songs[idx];
-  if (!confirm(`「${song.title}」を削除しますか？\n（ステムファイル本体は削除されません）`)) return;
+  if (!confirm(`「${song.title}」を削除しますか？`)) return;
+  showLoading(true, '削除中…');
   songs.splice(idx, 1);
-  saveSongs();
-  showToast('songs.json をダウンロードしました。GitHubに反映してください ✓', 'success');
-  renderSongTable();
-  showPage('songs-page');
+  try {
+    await saveSongs();
+    showToast('楽曲を削除しました ✓', 'success');
+    renderSongTable();
+    showPage('songs-page');
+  } catch(e) {
+    songs.splice(idx, 0, song); // rollback
+    showToast('エラー: ' + e.message, 'error');
+  }
+  showLoading(false);
 }
 
 /* ═══════════════════════════════════════
